@@ -7,7 +7,7 @@
 
 
 
-void voxResTree::Loop(Int_t N_events_loop)
+void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
 {
     printf("voxResTree::Loop \n");
 
@@ -38,9 +38,9 @@ void voxResTree::Loop(Int_t N_events_loop)
     h2D_DZ_vs_DX      ->Reset();
     h2D_DX_vs_stat    ->Reset();
     h2D_DXS_vs_radius ->Reset();
+    h2D_DX_vs_radius  ->Reset();        //NEW
     h2D_DY_vs_stat    ->Reset();
     //TP_DZ_vs_Z_trunc  ->Reset();
-
 
     for(Int_t i_trunc = 0; i_trunc < 2; i_trunc++)
     {
@@ -55,9 +55,9 @@ void voxResTree::Loop(Int_t N_events_loop)
     {
         for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
         {
-            vec_h2D_DY_Y_vs_X[i_z_bin][i_xyz]   ->Reset();
-            vec_h2D_DSY_Y_vs_X[i_z_bin][i_xyz]  ->Reset();
-            vec_h2D_stat_Y_vs_X[i_z_bin][i_xyz] ->Reset();
+            vec_h2D_DY_Y_vs_X[file_selected][i_z_bin][i_xyz]   ->Reset();
+            vec_h2D_DSY_Y_vs_X[file_selected][i_z_bin][i_xyz]  ->Reset();
+            vec_h2D_stat_Y_vs_X[file_selected][i_z_bin][i_xyz] ->Reset();
         }
     }
 
@@ -67,9 +67,9 @@ void voxResTree::Loop(Int_t N_events_loop)
         {
             for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
             {
-                vec_h2D_DY_X_vs_Z[i_sector][i_phi][i_xyz]   ->Reset();
-                vec_h2D_DSY_X_vs_Z[i_sector][i_phi][i_xyz]  ->Reset();
-                vec_h2D_stat_X_vs_Z[i_sector][i_phi][i_xyz] ->Reset();
+                vec_h2D_DY_X_vs_Z[file_selected][i_sector][i_phi][i_xyz]   ->Reset();
+                vec_h2D_DSY_X_vs_Z[file_selected][i_sector][i_phi][i_xyz]  ->Reset();
+                vec_h2D_stat_X_vs_Z[file_selected][i_sector][i_phi][i_xyz] ->Reset();
             }
         }
     }
@@ -161,32 +161,32 @@ void voxResTree::Loop(Int_t N_events_loop)
     // Gaussian filtering
     if(flag_gaussfilter || flag_sectoraverage)
     {
-        for(Long64_t jentry = 0; jentry < N_entries_loop; jentry++)
+    for(Long64_t jentry = 0; jentry < N_entries_loop; jentry++)
+    {
+        Long64_t ientry = LoadTree(jentry);
+        if (ientry < 0) break;
+        nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+        Int_t bvox_Z = (Int_t)bvox[0];  // Z/X index 0..4
+        Int_t bvox_F = (Int_t)bvox[1];  // Y/X index 0..14
+        Int_t bvox_X = (Int_t)bvox[2];  // X index   0..151
+
+        Float_t DX = D[0];
+        Float_t DY = D[1];
+        Float_t DZ = D[2];
+
+        Float_t DSX = DS[0];
+        Float_t DSY = DS[1];
+        Float_t DSZ = DS[2];
+
+        Int_t sector = (Int_t)bsec;
+        Int_t i_z = 1;
+        Float_t sign_z = 1.0;
+        if(sector >= 18)
         {
-            Long64_t ientry = LoadTree(jentry);
-            if (ientry < 0) break;
-            nb = fChain->GetEntry(jentry);   nbytes += nb;
-
-            Int_t bvox_Z = (Int_t)bvox[0];  // Z/X index 0..4
-            Int_t bvox_F = (Int_t)bvox[1];  // Y/X index 0..14
-            Int_t bvox_X = (Int_t)bvox[2];  // X index   0..151
-
-            Float_t DX = D[0];
-            Float_t DY = D[1];
-            Float_t DZ = D[2];
-
-            Float_t DSX = DS[0];
-            Float_t DSY = DS[1];
-            Float_t DSZ = DS[2];
-
-            Int_t sector = (Int_t)bsec;
-            Int_t i_z = 1;
-            Float_t sign_z = 1.0;
-            if(sector >= 18)
-            {
-                sign_z = -1.0;
-                i_z    = 0;
-            }
+            sign_z = -1.0;
+            i_z    = 0;
+        }
 
             vec_DXYZ_sec_vox[0][sector][bvox_X][bvox_F][bvox_Z] = DX;
             vec_DXYZ_sec_vox[1][sector][bvox_X][bvox_F][bvox_Z] = DY;
@@ -502,12 +502,12 @@ void voxResTree::Loop(Int_t N_events_loop)
                         //if(plot_sector == 0 && bvox_F == 0) printf("plot_sector: %d, bvox_F: %d \n",plot_sector,bvox_F);
                         for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
                         {
-                            vec_h2D_DY_X_vs_Z[plot_sector][bvox_F][i_xyz]  ->SetBinContent(i_bin_x,i_bin_y,D[i_xyz]);
-                            vec_h2D_DSY_X_vs_Z[plot_sector][bvox_F][i_xyz] ->SetBinContent(i_bin_x,i_bin_y,DS[i_xyz]);
+                            vec_h2D_DY_X_vs_Z[file_selected][plot_sector][bvox_F][i_xyz]  ->SetBinContent(i_bin_x,i_bin_y,D[i_xyz]);
+                            vec_h2D_DSY_X_vs_Z[file_selected][plot_sector][bvox_F][i_xyz] ->SetBinContent(i_bin_x,i_bin_y,DS[i_xyz]);
                         }
-                        vec_h2D_stat_X_vs_Z[plot_sector][bvox_F][0] ->SetBinContent(i_bin_x,i_bin_y,stat[3]);
-                        vec_h2D_stat_X_vs_Z[plot_sector][bvox_F][1] ->SetBinContent(i_bin_x,i_bin_y,flags);
-                        vec_h2D_stat_X_vs_Z[plot_sector][bvox_F][2] ->SetBinContent(i_bin_x,i_bin_y,dYSigMAD);
+                        vec_h2D_stat_X_vs_Z[file_selected][plot_sector][bvox_F][0] ->SetBinContent(i_bin_x,i_bin_y,stat[3]);
+                        vec_h2D_stat_X_vs_Z[file_selected][plot_sector][bvox_F][1] ->SetBinContent(i_bin_x,i_bin_y,flags);
+                        vec_h2D_stat_X_vs_Z[file_selected][plot_sector][bvox_F][2] ->SetBinContent(i_bin_x,i_bin_y,dYSigMAD);
                     }
                 }
             }
@@ -556,19 +556,19 @@ void voxResTree::Loop(Int_t N_events_loop)
                 Double_t phi_val = (-90.0 + (sector%18)*20.0 + 10.0)*TMath::DegToRad(); // rotation from local to global TPC coordinate system
                 vec_2D_global = vec_2D_local.Rotate(phi_val);
 
-                Int_t i_bin_x_rot = vec_h2D_DY_Y_vs_X[z_bin][0]  ->GetXaxis()->FindBin(vec_2D_global.X());
-                Int_t i_bin_y_rot = vec_h2D_DY_Y_vs_X[z_bin][0]  ->GetYaxis()->FindBin(vec_2D_global.Y());
+                Int_t i_bin_x_rot = vec_h2D_DY_Y_vs_X[file_selected][z_bin][0]  ->GetXaxis()->FindBin(vec_2D_global.X());
+                Int_t i_bin_y_rot = vec_h2D_DY_Y_vs_X[file_selected][z_bin][0]  ->GetYaxis()->FindBin(vec_2D_global.Y());
 
                 for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
                 {
-                    Double_t bin_cont = vec_h2D_DY_Y_vs_X[z_bin][i_xyz]   ->GetBinContent(i_bin_x_rot,i_bin_y_rot);
+                    Double_t bin_cont = vec_h2D_DY_Y_vs_X[file_selected][z_bin][i_xyz]   ->GetBinContent(i_bin_x_rot,i_bin_y_rot);
                     //if(bin_cont > 0.0) printf("WARNING! Bin already filled! \n");
-                    vec_h2D_DY_Y_vs_X[z_bin][i_xyz]   ->SetBinContent(i_bin_x_rot,i_bin_y_rot,D[i_xyz]); // XALEX
-                    vec_h2D_DSY_Y_vs_X[z_bin][i_xyz]  ->SetBinContent(i_bin_x_rot,i_bin_y_rot,DS[i_xyz]);
+                    vec_h2D_DY_Y_vs_X[file_selected][z_bin][i_xyz]   ->SetBinContent(i_bin_x_rot,i_bin_y_rot,D[i_xyz]);
+                    vec_h2D_DSY_Y_vs_X[file_selected][z_bin][i_xyz]  ->SetBinContent(i_bin_x_rot,i_bin_y_rot,DS[i_xyz]);
                 }
-                vec_h2D_stat_Y_vs_X[z_bin][0] ->SetBinContent(i_bin_x_rot,i_bin_y_rot,stat[3]);
-                vec_h2D_stat_Y_vs_X[z_bin][1] ->SetBinContent(i_bin_x_rot,i_bin_y_rot,flags);
-                vec_h2D_stat_Y_vs_X[z_bin][2] ->SetBinContent(i_bin_x_rot,i_bin_y_rot,dYSigMAD);
+                vec_h2D_stat_Y_vs_X[file_selected][z_bin][0] ->SetBinContent(i_bin_x_rot,i_bin_y_rot,stat[3]);
+                vec_h2D_stat_Y_vs_X[file_selected][z_bin][1] ->SetBinContent(i_bin_x_rot,i_bin_y_rot,flags);
+                vec_h2D_stat_Y_vs_X[file_selected][z_bin][2] ->SetBinContent(i_bin_x_rot,i_bin_y_rot,dYSigMAD);
             }
         }
         //--------------------------------------------------
@@ -591,7 +591,9 @@ void voxResTree::Loop(Int_t N_events_loop)
             h2D_DY_vs_stat ->Fill(stat[3],D[1]);
         }
 
-        h2D_DXS_vs_radius ->Fill(stat[2],DSX);
+        h2D_DXS_vs_radius ->Fill(sign_z*stat[2],DSX);
+        h2D_DX_vs_radius ->Fill(sign_z*stat[2],DX);
+
 
         if(bvox[0] == 0 && stat[3] > 0)
         {
@@ -620,12 +622,8 @@ void voxResTree::Loop(Int_t N_events_loop)
 
         //if(sign_z > 0) printf("jentry: %lld, bvox_Z: %d, bvox_F: %d, bvox_X: %d, dist: {%4.3f, %4.3f, %4.3f}, sign_z*bvox_Z+1: %4.2f \n",jentry,bvox_Z,bvox_F,bvox_X,DX,DY,DZ,sign_z*(bvox_Z+1));
         // if (Cut(ientry) < 0) continue;
-    } // end of voxel loop
+    }
     printf("max dist: {%4.3f, %4.3f, %4.3f} \n",maxDX,maxDY,maxDZ);
-    //------------------------------------------------------------------------
-
-
-
 
 
     //------------------------------------------------------------------------
@@ -928,7 +926,6 @@ void voxResTree::Loop(Int_t N_events_loop)
     //------------------------------------------------------------------------
 
 
-
     //------------------------------------------------------------------------
     can_h2D_DY_vs_stat ->cd();
     can_h2D_DY_vs_stat ->cd()->SetFillColor(10);
@@ -961,8 +958,8 @@ void voxResTree::Loop(Int_t N_events_loop)
     //------------------------------------------------------------------------
 
 
-
-
+    // -----------------------------------------------------------------------
+    //                    X-Residuals (DX) vs Radius (R)
     //------------------------------------------------------------------------
     can_TP_DX_vs_R ->cd();
     can_TP_DX_vs_R ->cd()->SetFillColor(10);
@@ -1025,6 +1022,50 @@ void voxResTree::Loop(Int_t N_events_loop)
     can_TP_DY_vs_R ->Update();
     //------------------------------------------------------------------------
 
+    // -----------------------------------------------------------------------
+    can_h2D_and_h1D_DX_vs_radius ->Divide(1,2);
+    can_h2D_and_h1D_DX_vs_radius ->cd(1);
+    can_h2D_and_h1D_DX_vs_radius ->cd(1)->SetFillColor(10);
+    can_h2D_and_h1D_DX_vs_radius ->cd(1)->SetTopMargin(0.1);
+    can_h2D_and_h1D_DX_vs_radius ->cd(1)->SetBottomMargin(0.2);
+    can_h2D_and_h1D_DX_vs_radius ->cd(1)->SetRightMargin(0.15);
+    can_h2D_and_h1D_DX_vs_radius ->cd(1)->SetLeftMargin(0.2);
+    can_h2D_and_h1D_DX_vs_radius ->cd(1)->SetTicks(1,1);
+    can_h2D_and_h1D_DX_vs_radius ->cd(1)->SetGrid(0,0);
+    can_h2D_and_h1D_DX_vs_radius ->cd(1);
+    can_h2D_and_h1D_DX_vs_radius ->cd(1)->SetLogz(1);
+    h2D_DX_vs_radius ->GetXaxis()->CenterTitle();
+    h2D_DX_vs_radius ->GetYaxis()->CenterTitle();
+    h2D_DX_vs_radius ->SetStats(0);
+    h2D_DX_vs_radius ->SetTitle("");
+    h2D_DX_vs_radius ->GetXaxis()->SetTitleOffset(1.2);
+    h2D_DX_vs_radius ->GetYaxis()->SetTitleOffset(1.3);
+    h2D_DX_vs_radius ->GetXaxis()->SetLabelSize(0.06);
+    h2D_DX_vs_radius ->GetYaxis()->SetLabelSize(0.06);
+    h2D_DX_vs_radius ->GetXaxis()->SetTitleSize(0.06);
+    h2D_DX_vs_radius ->GetYaxis()->SetTitleSize(0.06);
+    h2D_DX_vs_radius ->GetXaxis()->SetNdivisions(505,'N');
+    h2D_DX_vs_radius ->GetYaxis()->SetNdivisions(505,'N');
+    h2D_DX_vs_radius ->GetXaxis()->SetTitle("radius (cm)");
+    h2D_DX_vs_radius ->GetYaxis()->SetTitle("#DeltaX (cm)");
+    h2D_DX_vs_radius ->GetZaxis()->SetTitle("entries");
+    //h2D_DX_vs_radius ->GetYaxis()->SetRangeUser(-4.5,4.5);
+    h2D_DX_vs_radius ->DrawCopy("colz");
+
+    can_h2D_and_h1D_DX_vs_radius ->cd(2);
+    can_h2D_and_h1D_DX_vs_radius ->cd(2)->SetFillColor(10);
+    can_h2D_and_h1D_DX_vs_radius ->cd(2)->SetTopMargin(0.1);
+    can_h2D_and_h1D_DX_vs_radius ->cd(2)->SetBottomMargin(0.2);
+    can_h2D_and_h1D_DX_vs_radius ->cd(2)->SetRightMargin(0.15);
+    can_h2D_and_h1D_DX_vs_radius ->cd(2)->SetLeftMargin(0.2);
+    can_h2D_and_h1D_DX_vs_radius ->cd(2)->SetTicks(1,1);
+    can_h2D_and_h1D_DX_vs_radius ->cd(2)->SetGrid(0,0);
+    can_h2D_and_h1D_DX_vs_radius ->cd(2);
+    can_h2D_and_h1D_DX_vs_radius ->cd(2)->SetLogz(0);
+    TP_DX_vs_R ->DrawCopy("hist");
+    can_h2D_and_h1D_DX_vs_radius ->Update();
+    //------------------------------------------------------------------------
+ 
 
 
     //------------------------------------------------------------------------

@@ -17,7 +17,7 @@
 #include <cmath>
 #include <iomanip>
 using namespace std;
-#include "../pp/functions.h"
+#include "functions.h"
 #include "TGComboBox.h"
 #include "TRootEmbeddedCanvas.h"
 #include "TGSlider.h"
@@ -141,18 +141,23 @@ public :
 
    TFile* inputfile;
 
-   vector< vector< vector<TH2D*> > > vec_h2D_DY_X_vs_Z; // sector (0..8), phi (0..14), xyz
-   vector< vector< vector<TH2D*> > > vec_h2D_DSY_X_vs_Z; // sector (0..8), phi (0..14), xyz
-   vector< vector< vector<TH2D*> > > vec_h2D_stat_X_vs_Z; // sector (0..8), phi (0..14), xyz
+   vector< vector< vector< vector<TH2D*> > > > vec_h2D_DY_X_vs_Z; // sector (0..8), phi (0..14), xyz
+   vector< vector< vector< vector<TH2D*> > > > vec_h2D_DSY_X_vs_Z; // sector (0..8), phi (0..14), xyz
+   vector< vector< vector< vector<TH2D*> > > > vec_h2D_stat_X_vs_Z; // sector (0..8), phi (0..14), xyz
 
-   vector< vector<TH2D*> > vec_h2D_DY_Y_vs_X; // sector (0..8), phi (0..14), xyz
-   vector< vector<TH2D*> > vec_h2D_DSY_Y_vs_X; // sector (0..8), phi (0..14), xyz
-   vector< vector<TH2D*> > vec_h2D_stat_Y_vs_X; // sector (0..8), phi (0..14), xyz
+   vector< vector< vector<TH2D*> > > vec_h2D_DY_Y_vs_X; // sector (0..8), phi (0..14), xyz
+   vector< vector< vector<TH2D*> > > vec_h2D_DSY_Y_vs_X; // sector (0..8), phi (0..14), xyz
+   vector< vector< vector<TH2D*> > > vec_h2D_stat_Y_vs_X; // sector (0..8), phi (0..14), xyz
+
 
    vector<TH1D*> vec_h_Distortions;
    vector<TH2D*> vec_h2D_Distortions_vs_voxZ;
+
+   TH2D *h2D_left, *h2D_right, *h2D_right_copy;
+
    TH2D *h2D_DX_vs_sector, *h2D_DY_vs_DX, *h2D_DZ_vs_DX, *h2D_DY_vs_sector, *h2D_DZ_vs_sector, *h2D_DY_X_vs_Z, *h2D_Y_vs_X_TPC_sector, *h2D_DZ_vs_Z, *h2D_DZ_vs_Z_trunc;
    TH2D *h2D_DX_vs_stat, *h2D_DY_vs_stat, *h2D_DXS_vs_radius;
+   TH2D *h2D_DX_vs_radius;
    vector< vector<TH2D*> > vec_h2D_DZ_vs_Z;
    TProfile *TP_DZ_vs_Z, *TP_DZ_vs_Z_trunc;
    vector< vector<TProfile*> >  vec_TP_DZ_vs_Z;
@@ -163,6 +168,7 @@ public :
    TCanvas *can_TP_DX_vs_R, *can_TP_DY_vs_R, *can_vec_TP_DZ_vs_DX_tanTheta, *can_vec_TP_DY_vs_DX_tanTheta;
    TCanvas* can_vec_h_Distortions, *can_vec_h2D_Distortions_vs_voxZ, *can_h2D_DX_vs_sector, *can_h2D_DY_vs_DX, *can_h2D_DZ_vs_DX, *can_h2D_DY_vs_sector, *can_h2D_DZ_vs_sector, *can_h2D_DZ_vs_Z;
    TCanvas *can_h2D_DX_vs_stat, *can_h2D_DY_vs_stat, *can_h2D_DXS_vs_radius;
+   TCanvas *can_h2D_and_h1D_DX_vs_radius;
    TString arr_label_xyz[3] = {"#DeltaX (cm)","#DeltaY (cm)","#DeltaZ (cm)"};
 
    TFile* outputfile;
@@ -197,17 +203,20 @@ public :
    TGTextButton  *Button_export;
    TGTextButton  *Button_applyGF;
    TGCheckButton* CheckBox_scanData;
+   TGCheckButton* CheckBox_getRatio;
    TGHorizontalFrame *TGH_scale_X, *TGH_scale_Y, *TGH_scale_Z;
    TGNumberEntry *TGNum_scale_X, *TGNum_scale_Y, *TGNum_scale_Z;
    TGCheckButton *CheckBox_invert_X, *CheckBox_invert_Y, *CheckBox_invert_Z;
    TGCheckButton *CheckBox_gaussfilter, *CheckBox_sectoraverage;
-   TGButtonGroup *TGB_group_alignment_A, *TGB_group_alignment_B, *TGB_group_alignment_C;
+   TGButtonGroup *TGB_group_alignment_A, *TGB_group_alignment_B, *TGB_group_alignment_C, *TGB_group_alignment_D;
    TGTextEntry* TGText_outputname;
    Int_t sector_plot = 0;
    Int_t phi_plot    = 0;
    Int_t zbin_plot    = 0;
    vector<TGRadioButton*> vec_TRB_plot_data;
+   vector<TGRadioButton*> vec_select;
    Int_t plot_data_use = 0;
+   Int_t selected_file = 0;
    Int_t flag_plot_data_type = 0;
    TGStatusBar          *fStatusBar;
 
@@ -215,7 +224,12 @@ public :
 
    vector<TString> vec_TS_afile;
 
-   Int_t N_bins_Y_GF = 3;
+   Bool_t flag_select1 = false;
+   Bool_t flag_select2 = false;
+   Bool_t ratio_pressed = false;
+   Bool_t draw_ratio = false;
+   Int_t global_position = 0;
+      Int_t N_bins_Y_GF = 3;
    Int_t N_bins_X_GF = 3;
    Int_t N_bins_Z_GF = 1;
    Double_t sigma_GF = 1.0;
@@ -240,7 +254,7 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init();
-   virtual void     Loop(Int_t N_events);
+   virtual void     Loop(Int_t N_events, Int_t file_selected);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
    void     Change_slider();
@@ -249,14 +263,16 @@ public :
    void     Update_data_buttons(Int_t i_button_A, Int_t i_button_B);
    void     Get_directory_list();
    void     DoExport();
-   void     DoNewDataSelection(Int_t i_select);
+   void     DoNewDataSelection(Int_t i_position);
    void     func_dummy(Int_t i_select);
    void     DoNewDataSelection();
    //void     DoNewFileSelection(Int_t i_select);
-   void     DoNewFileSelection();
+   void     DoNewFileSelection(Int_t i_file);
+   void     GetRatio();
    void     InitChain();
    void     SetStatusText(const char *txt, Int_t pi);
    void     EventInfo(Int_t event, Int_t px, Int_t py, TObject *selected);
+
 };
 
 #endif
@@ -367,7 +383,6 @@ void voxResTree::Init()
 
 
     SetRootGraphicStyle();
-    //gStyle->SetPalette(kBird);
 
     gClient->GetColorByName("yellow", ycolor);
     gClient->GetColorByName("blue", bcolor);
@@ -394,22 +409,23 @@ void voxResTree::Init()
 
 
 
-    TP_DX_vs_R       = new TProfile("TP_DX_vs_R","TP_DX_vs_R",100,-250,250);
-    TP_DY_vs_R       = new TProfile("TP_DY_vs_R","TP_DY_vs_R",100,-250,250);
-    h2D_DX_vs_stat   = new TH2D("h2D_DX_vs_stat","h2D_DX_vs_stat",400,0,5000,400,-10,10);
-    h2D_DXS_vs_radius = new TH2D("h2D_DXS_vs_radius","h2D_DXS_vs_radius",250,80,250,400,-10,10);
-    h2D_DY_vs_stat   = new TH2D("h2D_DY_vs_stat","h2D_DY_vs_stat",400,0,5000,400,-10,10);
-    h2D_DX_vs_sector = new TH2D("h2D_DX_vs_sector","h2D_DX_vs_sector",540,0,36,400,-10,10);
-    h2D_DY_vs_sector = new TH2D("h2D_DY_vs_sector","h2D_DY_vs_sector",540,0,36,400,-10,10);
-    h2D_DZ_vs_sector = new TH2D("h2D_DZ_vs_sector","h2D_DZ_vs_sector",540,0,36,400,-10,10);
-    h2D_DY_vs_DX     = new TH2D("h2D_DY_vs_DX","h2D_DY_vs_DX",400,-10,10,400,-10,10);
-    h2D_DZ_vs_DX     = new TH2D("h2D_DZ_vs_DX","h2D_DZ_vs_DX",400,-10,10,400,-10,10);
-    h2D_DY_X_vs_Z = new TH2D("h2D_DY_X_vs_Z","h2D_DY_X_vs_Z",500,-250,250,600,-250,250);
-    h2D_Y_vs_X_TPC_sector = new TH2D("h2D_Y_vs_X_TPC_sector","h2D_Y_vs_X_TPC_sector",200,-50,50,200,80,260);
-    h2D_DZ_vs_Z = new TH2D("h2D_DZ_vs_Z","h2D_DZ_vs_Z",200,-250,250,200,-20,20);
-    TP_DZ_vs_Z  = new TProfile("TP_DZ_vs_Z","TP_DZ_vs_Z",200,-250,250);
-    h2D_DZ_vs_Z_trunc = new TH2D("h2D_DZ_vs_Z_trunc","h2D_DZ_vs_Z_trunc",200,-250,250,200,-20,20);
-    //TP_DZ_vs_Z_trunc  = new TProfile("TP_DZ_vs_Z_trunc","TP_DZ_vs_Z_trunc",200,-250,250);
+    TP_DX_vs_R              = new TProfile("TP_DX_vs_R","TP_DX_vs_R",100,-250,250);
+    TP_DY_vs_R              = new TProfile("TP_DY_vs_R","TP_DY_vs_R",100,-250,250);
+    h2D_DX_vs_stat          = new TH2D("h2D_DX_vs_stat","h2D_DX_vs_stat",400,0,5000,400,-10,10);
+    h2D_DXS_vs_radius       = new TH2D("h2D_DXS_vs_radius","h2D_DXS_vs_radius",500,-250,250,400,-10,10);
+    h2D_DX_vs_radius        = new TH2D("h2D_DX_vs_radius","h2D_DX_vs_radius",500,-250,250,400,-10,10);
+    h2D_DY_vs_stat          = new TH2D("h2D_DY_vs_stat","h2D_DY_vs_stat",400,0,5000,400,-10,10);
+    h2D_DX_vs_sector        = new TH2D("h2D_DX_vs_sector","h2D_DX_vs_sector",540,0,36,400,-10,10);
+    h2D_DY_vs_sector        = new TH2D("h2D_DY_vs_sector","h2D_DY_vs_sector",540,0,36,400,-10,10);
+    h2D_DZ_vs_sector        = new TH2D("h2D_DZ_vs_sector","h2D_DZ_vs_sector",540,0,36,400,-10,10);
+    h2D_DY_vs_DX            = new TH2D("h2D_DY_vs_DX","h2D_DY_vs_DX",400,-10,10,400,-10,10);
+    h2D_DZ_vs_DX            = new TH2D("h2D_DZ_vs_DX","h2D_DZ_vs_DX",400,-10,10,400,-10,10);
+    h2D_DY_X_vs_Z           = new TH2D("h2D_DY_X_vs_Z","h2D_DY_X_vs_Z",500,-250,250,600,-250,250);
+    h2D_Y_vs_X_TPC_sector   = new TH2D("h2D_Y_vs_X_TPC_sector","h2D_Y_vs_X_TPC_sector",200,-50,50,200,80,260);
+    h2D_DZ_vs_Z             = new TH2D("h2D_DZ_vs_Z","h2D_DZ_vs_Z",200,-250,250,200,-20,20);
+    TP_DZ_vs_Z              = new TProfile("TP_DZ_vs_Z","TP_DZ_vs_Z",200,-250,250);
+    h2D_DZ_vs_Z_trunc       = new TH2D("h2D_DZ_vs_Z_trunc","h2D_DZ_vs_Z_trunc",200,-250,250,200,-20,20);
+    //TP_DZ_vs_Z_trunc      = new TProfile("TP_DZ_vs_Z_trunc","TP_DZ_vs_Z_trunc",200,-250,250);
 
     vec_TP_DZ_vs_DX_tanTheta.resize(2); // z
     vec_TP_DY_vs_DX_tanTheta.resize(2); // z
@@ -455,78 +471,117 @@ void voxResTree::Init()
         }
     }
 
-    vec_h2D_DY_X_vs_Z.resize(9); // sector (0..8), phi (0..14)
-    vec_h2D_DSY_X_vs_Z.resize(9); // sector (0..8), phi (0..14)
-    vec_h2D_stat_X_vs_Z.resize(9); // sector (0..8), phi (0..14)
 
-    for(Int_t i_sector = 0; i_sector < 9; i_sector++)
+    // -----------------------------------------------------------------------------------------------------
+    //                          X vs. Z plot
+    // -----------------------------------------------------------------------------------------------------
+
+    vec_h2D_DY_X_vs_Z.resize(2); // File 1&2
+    vec_h2D_DSY_X_vs_Z.resize(2); 
+    vec_h2D_stat_X_vs_Z.resize(2);
+
+    for(Int_t i_file = 0; i_file < 2; i_file++)
     {
-        vec_h2D_DY_X_vs_Z[i_sector].resize(15);
-        vec_h2D_DSY_X_vs_Z[i_sector].resize(15);
-        vec_h2D_stat_X_vs_Z[i_sector].resize(15);
-        for(Int_t i_phi = 0; i_phi < 15; i_phi++)
+        vec_h2D_DY_X_vs_Z[i_file].resize(9); // sector (0..8), phi (0..14)
+        vec_h2D_DSY_X_vs_Z[i_file].resize(9); // sector (0..8), phi (0..14)
+        vec_h2D_stat_X_vs_Z[i_file].resize(9); // sector (0..8), phi (0..14)
+
+        for(Int_t i_sector = 0; i_sector < 9; i_sector++)
         {
-            vec_h2D_DY_X_vs_Z[i_sector][i_phi].resize(3);
-            vec_h2D_DSY_X_vs_Z[i_sector][i_phi].resize(3);
-            vec_h2D_stat_X_vs_Z[i_sector][i_phi].resize(3);
-            for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+            vec_h2D_DY_X_vs_Z[i_file][i_sector].resize(15);
+            vec_h2D_DSY_X_vs_Z[i_file][i_sector].resize(15);
+            vec_h2D_stat_X_vs_Z[i_file][i_sector].resize(15);
+            for(Int_t i_phi = 0; i_phi < 15; i_phi++)
             {
-                HistName = "vec_h2D_DY_X_vs_Z_sec";
-                HistName += i_sector;
-                HistName += "_phi";
-                HistName += i_phi;
-                HistName += "_xyz";
-                HistName += i_xyz;
-                vec_h2D_DY_X_vs_Z[i_sector][i_phi][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,600,-250,250);
+                vec_h2D_DY_X_vs_Z[i_file][i_sector][i_phi].resize(3);
+                vec_h2D_DSY_X_vs_Z[i_file][i_sector][i_phi].resize(3);
+                vec_h2D_stat_X_vs_Z[i_file][i_sector][i_phi].resize(3);
+                for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+                {
+                    HistName = "vec_h2D_DY_X_vs_Z_file";
+                    HistName += i_file;
+                    HistName += "_sec";
+                    HistName += i_sector;
+                    HistName += "_phi";
+                    HistName += i_phi;
+                    HistName += "_xyz";
+                    HistName += i_xyz;
+                    vec_h2D_DY_X_vs_Z[i_file][i_sector][i_phi][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,600,-250,250);
 
-                HistName = "vec_h2D_DSY_X_vs_Z_sec";
-                HistName += i_sector;
-                HistName += "_phi";
-                HistName += i_phi;
-                HistName += "_xyz";
-                HistName += i_xyz;
-                vec_h2D_DSY_X_vs_Z[i_sector][i_phi][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,600,-250,250);
+                    HistName = "vec_h2D_DSY_X_vs_Z_file";
+                    HistName += i_file;
+                    HistName += "_sec";
+                    HistName += i_sector;
+                    HistName += "_phi";
+                    HistName += i_phi;
+                    HistName += "_xyz";
+                    HistName += i_xyz;
+                    vec_h2D_DSY_X_vs_Z[i_file][i_sector][i_phi][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,600,-250,250);
 
-                HistName = "vec_h2D_stat_X_vs_Z_sec";
-                HistName += i_sector;
-                HistName += "_phi";
-                HistName += i_phi;
-                HistName += "_xyz";
-                HistName += i_xyz;
-                vec_h2D_stat_X_vs_Z[i_sector][i_phi][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,600,-250,250);
+                    HistName = "vec_h2D_stat_X_vs_Z_file";
+                    HistName += i_file;
+                    HistName += "_sec";
+                    HistName += i_sector;
+                    HistName += "_phi";
+                    HistName += i_phi;
+                    HistName += "_xyz";
+                    HistName += i_xyz;
+                    vec_h2D_stat_X_vs_Z[i_file][i_sector][i_phi][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,600,-250,250);
+                }
             }
         }
-    }
 
 
-    vec_h2D_DY_Y_vs_X.resize(10); // z/x bins
-    vec_h2D_DSY_Y_vs_X.resize(10); // z/x bins
-    vec_h2D_stat_Y_vs_X.resize(10); // z/x bins
-    for(Int_t i_z_bin = 0; i_z_bin < 10; i_z_bin++)
+    } 
+
+
+
+    // -----------------------------------------------------------------------------------------------------
+    //                          X vs. Y plot
+    // -----------------------------------------------------------------------------------------------------
+
+    
+    vec_h2D_DY_Y_vs_X.resize(2); // File 1&2
+    vec_h2D_DSY_Y_vs_X.resize(2); 
+    vec_h2D_stat_Y_vs_X.resize(2); 
+
+    for(Int_t i_file = 0; i_file < 2; i_file++)
     {
-        vec_h2D_DY_Y_vs_X[i_z_bin].resize(3);
-        vec_h2D_DSY_Y_vs_X[i_z_bin].resize(3);
-        vec_h2D_stat_Y_vs_X[i_z_bin].resize(3);
-        for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+        vec_h2D_DY_Y_vs_X[i_file].resize(10); // z/x bins
+        vec_h2D_DSY_Y_vs_X[i_file].resize(10); // z/x bins
+        vec_h2D_stat_Y_vs_X[i_file].resize(10); // z/x bins
+        for(Int_t i_z_bin = 0; i_z_bin < 10; i_z_bin++)
         {
-            HistName = "vec_h2D_DY_Y_vs_X_sec";
-            HistName += i_z_bin;
-            HistName += "_xyz";
-            HistName += i_xyz;
-            vec_h2D_DY_Y_vs_X[i_z_bin][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,500,-250,250);
+            vec_h2D_DY_Y_vs_X[i_file][i_z_bin].resize(3);
+            vec_h2D_DSY_Y_vs_X[i_file][i_z_bin].resize(3);
+            vec_h2D_stat_Y_vs_X[i_file][i_z_bin].resize(3);
+            for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+            {
+                HistName = "vec_h2D_DY_Y_vs_X_file";
+                HistName += i_file;
+                HistName += "_sec";
+                HistName += i_z_bin;
+                HistName += "_xyz";
+                HistName += i_xyz;
+                vec_h2D_DY_Y_vs_X[i_file][i_z_bin][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,500,-250,250);
 
-            HistName = "vec_h2D_DSY_Y_vs_X_sec";
-            HistName += i_z_bin;
-            HistName += "_xyz";
-            HistName += i_xyz;
-            vec_h2D_DSY_Y_vs_X[i_z_bin][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,500,-250,250);
+                HistName = "vec_h2D_DSY_Y_vs_X_file";
+                HistName += i_file;
+                HistName += "_sec";
+                HistName += i_z_bin;
+                HistName += "_xyz";
+                HistName += i_xyz;
+                vec_h2D_DSY_Y_vs_X[i_file][i_z_bin][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,500,-250,250);
 
-            HistName = "vec_h2D_stat_Y_vs_X_sec";
-            HistName += i_z_bin;
-            HistName += "_xyz";
-            HistName += i_xyz;
-            vec_h2D_stat_Y_vs_X[i_z_bin][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,500,-250,250);
-        }
+                HistName = "vec_h2D_stat_Y_vs_X_file";
+                HistName += i_file;
+                HistName += "_sec";
+                HistName += i_z_bin;
+                HistName += "_xyz";
+                HistName += i_xyz;
+                vec_h2D_stat_Y_vs_X[i_file][i_z_bin][i_xyz] = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,500,-250,250);
+            }
+        }   
     }
 
     can_vec_h_Distortions = new TCanvas("can_vec_h_Distortions","can_vec_h_Distortions",10,10,1300,500);
@@ -543,6 +598,8 @@ void voxResTree::Init()
 
     can_h2D_DX_vs_stat   = new TCanvas("can_h2D_DX_vs_stat","can_h2D_DX_vs_stat",10,10,800,500);
     can_h2D_DXS_vs_radius  = new TCanvas("can_h2D_DXS_vs_radius","can_h2D_DXS_vs_radius",10,10,800,500);
+    can_h2D_and_h1D_DX_vs_radius  = new TCanvas("can_h2D_and_h1D_DX_vs_radius","can_h2D_and_h1D_DX_vs_radius",10,10,800,500);           //NEW 1D and 2D Histogram
+
     can_h2D_DY_vs_stat   = new TCanvas("can_h2D_DY_vs_stat","can_h2D_DY_vs_stat",10,10,800,500);
     can_h2D_DX_vs_sector = new TCanvas("can_h2D_DX_vs_sector","can_h2D_DX_vs_sector",10,10,800,500);
     can_h2D_DY_vs_sector = new TCanvas("can_h2D_DY_vs_sector","can_h2D_DY_vs_sector",10,10,800,500);
@@ -629,11 +686,14 @@ void voxResTree::Init()
     TGB_group_alignment_A = new TGButtonGroup(TGH_lowerB,"Deltas");
     TGB_group_alignment_B = new TGButtonGroup(TGH_lowerB,"Smoothed");
     TGB_group_alignment_C = new TGButtonGroup(TGH_lowerB,"Statistics");
+    TGB_group_alignment_D = new TGButtonGroup(TGH_lowerB,"Show");
 
     // control horizontal position of the text
     TGB_group_alignment_A ->SetTitlePos(TGGroupFrame::kCenter);
     TGB_group_alignment_B ->SetTitlePos(TGGroupFrame::kCenter);
     TGB_group_alignment_C ->SetTitlePos(TGGroupFrame::kCenter);
+    TGB_group_alignment_D ->SetTitlePos(TGGroupFrame::kCenter);
+
     vec_TRB_plot_data.resize(9);
     vec_TRB_plot_data[0] = new TGRadioButton(TGB_group_alignment_A, "Dx", kTextRight);
     vec_TRB_plot_data[1] = new TGRadioButton(TGB_group_alignment_A, "Dy", kTextRight);
@@ -648,14 +708,26 @@ void voxResTree::Init()
     for(Int_t i_button = 0; i_button < (Int_t)vec_TRB_plot_data.size(); i_button++)
     {
         vec_TRB_plot_data[i_button] ->Connect("Pressed()", "voxResTree", this, Form("Update_data_buttons(Int_t=%d, %d)", i_button,0));
+        printf("Button Initiated: %d\n",i_button);
     }
+
+    vec_select.resize(2);
+    vec_select[0] = new TGRadioButton(TGB_group_alignment_D, "upper", kTextRight);
+    vec_select[1] = new TGRadioButton(TGB_group_alignment_D, "lower", kTextRight);
+    vec_select[0] ->Connect("Pressed()", "voxResTree", this, Form("Update_data_buttons(Int_t=%d, %d)", 0,1));
+    vec_select[1] ->Connect("Pressed()", "voxResTree", this, Form("Update_data_buttons(Int_t=%d, %d)", 1,1));
+
 
     TGB_group_alignment_A ->SetButton(kTextCenterX);
     TGB_group_alignment_B ->SetButton(kTextCenterX);
     TGB_group_alignment_C ->SetButton(kTextCenterX);
+    TGB_group_alignment_D ->SetButton(kTextCenterX);
     TGH_lowerB ->AddFrame(TGB_group_alignment_A, new TGLayoutHints(kLHintsExpandX));
     TGH_lowerB ->AddFrame(TGB_group_alignment_B, new TGLayoutHints(kLHintsExpandX));
     TGH_lowerB ->AddFrame(TGB_group_alignment_C, new TGLayoutHints(kLHintsExpandX));
+
+    TGH_lowerB ->AddFrame(TGB_group_alignment_D, new TGLayoutHints(kLHintsExpandX));
+
     //-------------------
 
 
@@ -709,15 +781,29 @@ void voxResTree::Init()
     fCombo_file[0]->SetBackgroundColor(wcolor);
 
     //fCombo_file[0]->Connect("ReturnPressed()", "voxResTree", this, "HandleButtonsGeneral(=14)");
-    fCombo_file[0]->Connect("Selected(Int_t)", "voxResTree", this, "DoNewFileSelection()");
+    fCombo_file[0]->Connect("Selected(Int_t)", "voxResTree", this, Form("DoNewFileSelection(Int_t=%d)",0));
     fCombo_file[0]->Connect("Changed()", "voxResTree", this, Form("func_dummy(Int_t=%d)",5));
     //fCombo_file[0]->Connect("Changed()", "voxResTree", this, "DoNewFileSelection()");
     //fCombo_file[0]->Connect("Changed()", "voxResTree", this, Form("DoNewFileSelection(Int_t=%d)",0));
-    //--------------------------------------
+
+    // exit button
+    Button_exit = new TGTextButton(TGH_lowerA, "&Exit ","gApplication->Terminate(0)");
+    TGH_lowerA->AddFrame(Button_exit, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+
+    // check box scan data
+    CheckBox_scanData  = new TGCheckButton(TGH_lowerA, new TGHotString("Scan data"), -1);
+    CheckBox_scanData ->SetState(kButtonUp);
+    //CheckBox_scanData ->Connect("Clicked()", "voxResTree", this, "DoNewDataSelection()");
+    CheckBox_scanData ->Connect("Clicked()", "voxResTree", this,Form("DoNewDataSelection(Int_t=%d)",0));
+    TGH_lowerA    ->AddFrame(CheckBox_scanData, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
 
 
-
-
+    // // check box get ratio
+    CheckBox_getRatio  = new TGCheckButton(TGH_lowerA, new TGHotString("Get Ratio"), -1);
+    // CheckBox_getRatio ->SetState(kButtonUp);
+    //CheckBox_scanData ->Connect("Clicked()", "voxResTree", this, "DoNewDataSelection()");
+    CheckBox_getRatio ->Connect("Clicked()", "voxResTree", this,Form("GetRatio()"));
+    TGH_lowerA    ->AddFrame(CheckBox_getRatio, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
     //--------------------------------------
     // data run selection B
     GR_data_selection_B  = new TGGroupFrame(TGV_data_selection_master,"Data selection B",kVerticalFrame);
@@ -746,9 +832,11 @@ void voxResTree::Init()
     fCombo_file[1]->Select(0);
     fCombo_file[1]->SetBackgroundColor(wcolor);
 
-    fCombo_file[1]->Connect("Selected(Int_t)", "voxResTree", this, "DoNewFileSelection()");
+    //fCombo_file[1]->Connect("ReturnPressed()", "voxResTree", this, "HandleButtonsGeneral(=14)");
+    fCombo_file[1]->Connect("Selected(Int_t)", "voxResTree", this, Form("DoNewFileSelection(Int_t=%d)",1));
     fCombo_file[1]->Connect("Changed()", "voxResTree", this, Form("func_dummy(Int_t=%d)",7));
-    //--------------------------------------
+    //fCombo_file[1]->Connect("Changed()", "voxResTree", this, "DoNewFileSelection()");
+    //fCombo_file[1]->Connect("Changed()", "voxResTree", this, Form("DoNewFileSelection(Int_t=%d)",0));
 
 
 
@@ -979,11 +1067,11 @@ void voxResTree::Init()
     TGV_range        ->AddFrame(TGNum_zmax,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
 
 
+
     vec_TGH_general[0] ->Resize(1600,550);
     vec_TGH_general[1] ->Resize(20,20);
 
     //vec_TGH_lower_split[0] ->Resize(1450,550);
-
 
     TGH_slider_phi     ->AddFrame(slider_phi,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
     TGH_slider_phi     ->AddFrame(TGNum_phi,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
@@ -1005,7 +1093,9 @@ void voxResTree::Init()
 
     DoNewDataSelection(0);
     //DoNewDataSelection();
-    Update_data_buttons(0,0); // init
+    Update_data_buttons(0,0);
+    Update_data_buttons(0,1); // init
+
 
     outputfile = new TFile("dZ_over_z_fit_params.root","RECREATE");
     //output_tree = new TTree("output_tree","fit params");
@@ -1032,7 +1122,6 @@ void voxResTree::Init()
     output_tree.Branch("end_time",&end_time,"end_time/l");
     output_tree.Branch("start_TF",&start_TF);
     output_tree.Branch("end_TF",&end_TF);
-
 
 }
 
@@ -1109,6 +1198,12 @@ void voxResTree::Update_DY_X_vs_Z()
     Int_t xyz_bin = plot_data_use%3;
     Int_t data_type = (Int_t)(plot_data_use/3.0);
 
+    printf("\n------------------------------------\n");
+    printf("Button pressed: %d\n",plot_data_use);
+    printf("Use File: %d\n",selected_file);
+    printf("Flag 1 set to: %d; Flag 2 set to: %d\n",flag_select1,flag_select2);
+    printf("\n------------------------------------\n");
+
 
     Double_t range_plot_z_min = TGNum_zmin ->GetNumberEntry()->GetNumber();
     Double_t range_plot_z_max = TGNum_zmax ->GetNumberEntry()->GetNumber();
@@ -1152,60 +1247,74 @@ void voxResTree::Update_DY_X_vs_Z()
 
 
 
+
     if(sector_plot >= 0 && phi_plot >= 0 && sector_plot < 9 && phi_plot < 15)
     {
         //printf("sector_plot: %d, phi_plot: %d \n",sector_plot,phi_plot);
-        can_h2D_DY_X_vs_Z ->cd();
+
+        can_h2D_DY_X_vs_Z ->cd();  //Here the histogram gets drawn in the left canvas
         if(data_type == 0)
         {
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->SetStats(0);
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->SetTitle("");
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetXaxis()->CenterTitle();
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->CenterTitle();
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetTitle("Z (cm)");
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitle("R (cm)");
-            if(xyz_bin == 0) vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaX (cm)");
-            if(xyz_bin == 1) vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaY (cm)");
-            if(xyz_bin == 2) vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaZ (cm)");
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
-            vec_h2D_DY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->DrawCopy("colz2");
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetStats(0);
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetTitle("");
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->CenterTitle();
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->CenterTitle();
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetTitle("Z (cm)");
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitle("R (cm)");
+            if(xyz_bin == 0) vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaX (cm)");
+            if(xyz_bin == 1) vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaY (cm)");
+            if(xyz_bin == 2) vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaZ (cm)");
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
+            // vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->DrawCopy("colz2");
+
+            TH1D *h2D_left = (TH1D*)vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin]->Clone("h2D_left");  
+            if(ratio_pressed) h2D_left->Divide(vec_h2D_DY_X_vs_Z[1][sector_plot][phi_plot][xyz_bin]);
+            h2D_left->Draw("colz2");
         }
         if(data_type == 1)
         {
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->SetStats(0);
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->SetTitle("");
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetXaxis()->CenterTitle();
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->CenterTitle();
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetTitle("Z (cm)");
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitle("R (cm)");
-            if(xyz_bin == 0) vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSX (cm)");
-            if(xyz_bin == 1) vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSY (cm)");
-            if(xyz_bin == 2) vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSZ (cm)");
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
-            vec_h2D_DSY_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->DrawCopy("colz2");
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetStats(0);
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetTitle("");
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->CenterTitle();
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->CenterTitle();
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetTitle("Z (cm)");
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitle("R (cm)");
+            if(xyz_bin == 0) vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSX (cm)");
+            if(xyz_bin == 1) vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSY (cm)");
+            if(xyz_bin == 2) vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSZ (cm)");
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
+            // vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->DrawCopy("colz2");
+
+            TH1D *h2D_left = (TH1D*)vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin]->Clone("h2D_left");  
+            if(ratio_pressed) h2D_left->Divide(vec_h2D_DSY_X_vs_Z[1][sector_plot][phi_plot][xyz_bin]);
+            h2D_left->Draw("colz2");
         }
         if(data_type == 2)
         {
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->SetStats(0);
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->SetTitle("");
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetXaxis()->CenterTitle();
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->CenterTitle();
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetTitle("Z (cm)");
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitle("R (cm)");
-            if(xyz_bin == 0) vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("entries");
-            if(xyz_bin == 1) vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("flag");
-            if(xyz_bin == 2) vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("dYSigMAD");
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
-            vec_h2D_stat_X_vs_Z[sector_plot][phi_plot][xyz_bin] ->DrawCopy("colz2");
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetStats(0);
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetTitle("");
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->CenterTitle();
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->CenterTitle();
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetTitle("Z (cm)");
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitle("R (cm)");
+            if(xyz_bin == 0) vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("entries");
+            if(xyz_bin == 1) vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("flag");
+            if(xyz_bin == 2) vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetTitle("dYSigMAD");
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->DrawCopy("colz2");
+
+            TH1D *h2D_left = (TH1D*)vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin]->Clone("h2D_left");  
+            if(ratio_pressed) h2D_left->Divide(vec_h2D_stat_X_vs_Z[1][sector_plot][phi_plot][xyz_bin]);
+            h2D_left->Draw("colz2");
         }
 
         Draw_R_Z_TPC(zbin_plot,0,kWhite);
@@ -1217,54 +1326,67 @@ void voxResTree::Update_DY_X_vs_Z()
     can_h2D_DY_Y_vs_X ->cd();
     if(data_type == 0)
     {
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->SetStats(0);
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->SetTitle("");
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetXaxis()->CenterTitle();
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->CenterTitle();
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetXaxis()->SetTitle("X (cm)");
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->SetTitle("Y (cm)");
-        if(xyz_bin == 0) vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaX (cm)");
-        if(xyz_bin == 1) vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaY (cm)");
-        if(xyz_bin == 2) vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaZ (cm)");
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
-        vec_h2D_DY_Y_vs_X[zbin_plot][xyz_bin] ->DrawCopy("colz2");
+        vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetStats(0);
+        vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetTitle("");
+        vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
+        vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
+        vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->CenterTitle();
+        vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->CenterTitle();
+        vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
+        vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetTitle("X (cm)");
+        vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetTitle("Y (cm)");
+        if(xyz_bin == 0) vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaX (cm)");
+        if(xyz_bin == 1) vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaY (cm)");
+        if(xyz_bin == 2) vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaZ (cm)");
+        vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
+        // vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->DrawCopy("colz2");
+
+        TH1D *h2D_right = (TH1D*)vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin]->Clone("h2D_right");  
+        if(ratio_pressed) h2D_right->Divide(vec_h2D_DY_Y_vs_X[1][zbin_plot][xyz_bin]);
+        h2D_right->Draw("colz2");
+
     }
     if(data_type == 1)
     {
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->SetStats(0);
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->SetTitle("");
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetXaxis()->CenterTitle();
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->CenterTitle();
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetXaxis()->SetTitle("X (cm)");
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->SetTitle("Y (cm)");
-        if(xyz_bin == 0) vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSX (cm)");
-        if(xyz_bin == 1) vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSY (cm)");
-        if(xyz_bin == 2) vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSZ (cm)");
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
-        vec_h2D_DSY_Y_vs_X[zbin_plot][xyz_bin] ->DrawCopy("colz2");
+        vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetStats(0);
+        vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetTitle("");
+        vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
+        vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
+        vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->CenterTitle();
+        vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->CenterTitle();
+        vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
+        vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetTitle("X (cm)");
+        vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetTitle("Y (cm)");
+        if(xyz_bin == 0) vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSX (cm)");
+        if(xyz_bin == 1) vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSY (cm)");
+        if(xyz_bin == 2) vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("#DeltaSZ (cm)");
+        vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
+        // vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->DrawCopy("colz2");
+
+        TH1D *h2D_right = (TH1D*)vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin]->Clone("h2D_right");  
+        if(ratio_pressed) h2D_right->Divide(vec_h2D_DSY_Y_vs_X[1][zbin_plot][xyz_bin]);
+        h2D_right->Draw("colz2");
     }
     if(data_type == 2)
     {
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->SetStats(0);
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->SetTitle("");
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetXaxis()->CenterTitle();
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->CenterTitle();
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetXaxis()->SetTitle("X (cm)");
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetYaxis()->SetTitle("Y (cm)");
-        if(xyz_bin == 0) vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("entries");
-        if(xyz_bin == 1) vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("flag");
-        if(xyz_bin == 2) vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("dYSigMAD");
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
-        vec_h2D_stat_Y_vs_X[zbin_plot][xyz_bin] ->DrawCopy("colz2");
+        vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetStats(0);
+        vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetTitle("");
+        vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
+        vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetNdivisions(505,'N');
+        vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->CenterTitle();
+        vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->CenterTitle();
+        vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetTitleOffset(1.0);
+        vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetTitle("X (cm)");
+        vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetTitle("Y (cm)");
+        if(xyz_bin == 0) vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("entries");
+        if(xyz_bin == 1) vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("flag");
+        if(xyz_bin == 2) vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetTitle("dYSigMAD");
+        vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetZaxis()->SetRangeUser(range_plot_z_min,range_plot_z_max);
+        // vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->DrawCopy("colz2");
+
+        TH1D *h2D_right = (TH1D*)vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin]->Clone("h2D_right");  
+        if(ratio_pressed) h2D_right->Divide(vec_h2D_stat_Y_vs_X[1][zbin_plot][xyz_bin]);
+        h2D_right->Draw("colz2");
     }
 
     Draw_phi_sector_TPC(sector_plot,phi_plot,kWhite);
@@ -1438,7 +1560,7 @@ void voxResTree::Update_DY_X_vs_Z()
 
     //--------------------------------------
     TString TS_inputpos = "";
-    TS_inputpos =  fCombo_file[0]->GetSelectedEntry()->GetTitle();
+    TS_inputpos =  fCombo_file[selected_file]->GetSelectedEntry()->GetTitle();
 
     for(Int_t i_radius = 0; i_radius < 4; i_radius++)
     {
@@ -1447,6 +1569,7 @@ void voxResTree::Update_DY_X_vs_Z()
 
 
     can_h2D_DZ_vs_Z ->Update();
+
 
     if(flag_loop)
     {
@@ -1502,11 +1625,11 @@ void voxResTree::Update_DY_X_vs_Z()
         output_tree.Fill();
  
 
-        Int_t N_entries_list = fCombo_file[0]->GetNumberOfEntries();
-        Int_t selected = fCombo_file[0]->GetSelected();
+        Int_t N_entries_list = fCombo_file[selected_file]->GetNumberOfEntries();
+        Int_t selected = fCombo_file[selected_file]->GetSelected();
         if(selected < (N_entries_list -1))
         {
-            fCombo_file[0]->Select(selected+1);
+            fCombo_file[selected_file]->Select(selected+1);
         }
         else
         {
@@ -1525,15 +1648,40 @@ void voxResTree::Update_data_buttons(Int_t i_button_A, Int_t i_button_B)
 {
     //printf("A,B: {%d, %d} \n",i_button_A,i_button_B);
     //enum  	EButtonState { kButtonUp , kButtonDown , kButtonEngaged , kButtonDisabled }
-    for(Int_t i_button = 0; i_button < (Int_t)vec_TRB_plot_data.size(); i_button++)
+    if(i_button_B == 0)
     {
-        vec_TRB_plot_data[i_button] ->SetState(kButtonUp);
+        for(Int_t i_button = 0; i_button < (Int_t)vec_TRB_plot_data.size(); i_button++)
+        {
+            vec_TRB_plot_data[i_button] ->SetState(kButtonUp);
+        }
+        vec_TRB_plot_data[i_button_A] ->SetState(kButtonDown);
+
+        plot_data_use = i_button_A;
     }
-    vec_TRB_plot_data[i_button_A] ->SetState(kButtonDown);
-    plot_data_use = i_button_A;
+    else if(i_button_B == 1 && flag_select1 && flag_select2)
+    {
+        for(Int_t i_button = 0; i_button < (Int_t)vec_select.size(); i_button++)
+        {
+            vec_select[i_button] ->SetState(kButtonUp);
+        }
+        vec_select[i_button_A] ->SetState(kButtonDown);
 
-
+        selected_file = i_button_A;
+    }
+    else if(i_button_B == 1 && flag_select1 && !flag_select2)
+    {
+        for(Int_t i_button = 0; i_button < (Int_t)vec_select.size(); i_button++)
+        {
+            vec_select[i_button] ->SetState(kButtonUp);
+        }
+        vec_select[i_button_A] ->SetState(kButtonDown);
+    }
+    else{
+        selected_file = 0;
+    }
     Update_DY_X_vs_Z();
+
+
 }
 //---------------------------------------------------------------------------------
 
@@ -1578,10 +1726,9 @@ void voxResTree::Get_directory_list()
 void voxResTree::func_dummy(Int_t i_select = -1)
 {
     printf("voxResTree::func_dummy(%d) \n",i_select);
+    if(i_select == 5) flag_select1 = true;
+    else if(i_select == 7) flag_select2 = true;
 }
-
-
-
 //---------------------------------------------------------------------------------
 void voxResTree::DoExport()
 {
@@ -1612,17 +1759,18 @@ void voxResTree::DoExport()
 //---------------------------------------------------------------------------------
 
 
-
 //---------------------------------------------------------------------------------
-void voxResTree::DoNewDataSelection(Int_t i_select)
+void voxResTree::DoNewDataSelection(Int_t i_position)
 //void voxResTree::DoNewDataSelection()
 {
     //Int_t i_select = 0;
     // To do: check for .root at the end of path
 
     //printf("voxResTree::DoNewDataSelection() for i_select: %d, i_selectB: %d \n",i_select,i_selectB);
+    printf("voxResTree::DoNewDataSelection(%d) \n",i_position);
+    
     TString TS_inputpos = "";
-    TS_inputpos =  fCombo_positions[i_select]->GetSelectedEntry()->GetTitle();
+    TS_inputpos =  fCombo_positions[i_position]->GetSelectedEntry()->GetTitle();
     printf("   directory: %s \n",TS_inputpos.Data());
 
     TString dir = TS_inputpos;
@@ -1655,14 +1803,17 @@ void voxResTree::DoNewDataSelection(Int_t i_select)
         vec_TS_voxfiles.push_back(path);
     }
 
-    fCombo_file[i_select] ->RemoveAll();
-    fCombo_file[i_select] ->Clear();
-    fCombo_file[i_select] ->Changed();
+    fCombo_file[i_position] ->RemoveAll();
+    fCombo_file[i_position] ->Clear();
+    fCombo_file[i_position] ->Changed();
     for(Int_t i_pos_entry = 0; i_pos_entry < (Int_t)vec_TS_voxfiles.size(); i_pos_entry++)
     {
-        fCombo_file[i_select]->AddEntry(vec_TS_voxfiles[i_pos_entry].Data(),i_pos_entry);
+        fCombo_file[i_position]->AddEntry(vec_TS_voxfiles[i_pos_entry].Data(),i_pos_entry);
     }
-    fCombo_file[i_select]->Select(0);
+
+    // Load fist file from the position:
+    // fCombo_file[i_position]->Select(0);
+    global_position = i_position;
 }
 //---------------------------------------------------------------------------------
 
@@ -1670,12 +1821,15 @@ void voxResTree::DoNewDataSelection(Int_t i_select)
 
 //---------------------------------------------------------------------------------
 //void voxResTree::DoNewFileSelection(Int_t i_select)
-void voxResTree::DoNewFileSelection()
+void voxResTree::DoNewFileSelection(Int_t i_file)
 {
-    printf("voxResTree::DoNewFileSelection() \n");
+    fCombo_file[global_position]->Select(i_file);
+
+    
+    printf("voxResTree::DoNewFileSelection(%d) \n",global_position);
     //printf("voxResTree::DoNewFileSelection(%d) \n",i_select);
     TString TS_inputpos = "";
-    TS_inputpos =  fCombo_file[0]->GetSelectedEntry()->GetTitle();
+    TS_inputpos =  fCombo_file[global_position]->GetSelectedEntry()->GetTitle();
     printf("Load root file: %s \n",TS_inputpos.Data());
     //inputfile = (TFile*)gROOT->GetListOfFiles()->FindObject(vec_TS_voxfiles[0]);
     if(inputfile) delete inputfile;
@@ -1688,10 +1842,34 @@ void voxResTree::DoNewFileSelection()
     printf("Root file loaded \n");
     inputfile->GetObject("voxResTree",fChain);
 
+    
+    // if(selected_file == 1){TS_inputpos.Data()}
+
+    // selected_file = i_file;
+
     InitChain();
-    Loop(-1);
+    Loop(-1,global_position);
 }
 //---------------------------------------------------------------------------------
+
+
+void voxResTree::GetRatio()
+{
+    ratio_pressed = !ratio_pressed;
+    printf("\n\nRATIOBUTTON PRESSED\n\n");
+    printf("Ratiobutton: %d",ratio_pressed);
+
+    if(!flag_select1){
+        printf("\nPlease select a FILE 1\n");
+    }
+    if(!flag_select2){
+        printf("\nPlease select a FILE 2\n");
+    }
+    if(ratio_pressed && flag_select1 && flag_select2){
+        printf("Getting Ratios of both files ready"); 
+        Update_DY_X_vs_Z();
+    }
+}
 
 
 
