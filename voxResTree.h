@@ -193,10 +193,10 @@ public :
    vector<TGHorizontalFrame*> vec_TGH_lower_split;
    TRootEmbeddedCanvas *emb_can_h2D_DY_X_vs_Z, *emb_can_h2D_DY_Y_vs_X;
    TCanvas *can_h2D_DY_X_vs_Z, *can_h2D_DY_Y_vs_X;
-   TGGroupFrame *GR_bottom_sliders_sector, *GR_bottom_sliders_phi, *GR_bottom_sliders_zbin, *GR_bottom_range, *GR_Exit, *GR_bottom_GF, *GR_data_selection_A, *GR_data_selection_B, *GR_data_output, *GR_data_invert;
+   TGGroupFrame *GR_bottom_sliders_sector, *GR_bottom_sliders_phi, *GR_bottom_sliders_zbin, *GR_bottom_range, *GR_Exit, *GR_bottom_GF, *GR_data_selection_A, *GR_data_selection_B, *GR_data_output, *GR_data_invert, *GR_Select;
    TGHorizontalFrame *TGH_slider_sector, *TGH_slider_phi, *TGH_slider_zbin, *TGH_DeltaX_GF, *TGH_DeltaY_GF, *TGH_DeltaZ_GF, *TGH_sigma_GF;
    TGLabel *TGL_DeltaX_GF, *TGL_DeltaY_GF, *TGL_DeltaZ_GF, *TGL_sigma_GF;
-   TGVerticalFrame *TGV_range, *TGV_Exit, *TGV_GF, *TGV_data_selection_A, *TGV_data_selection_B, *TGV_data_selection_master, *TGV_data_output, *TGV_data_invert, *TGV_data_output_master, *TGV_data_invert_master;
+   TGVerticalFrame *TGV_range, *TGV_Exit, *TGV_Select, *TGV_GF, *TGV_ExSel_master, *TGV_data_selection_A, *TGV_data_selection_B, *TGV_data_selection_master, *TGV_data_output, *TGV_data_invert, *TGV_data_output_master, *TGV_data_invert_master;
    TGHSlider *slider_sector, *slider_phi, *slider_zbin;
    TGNumberEntry *TGNum_sector, *TGNum_phi, *TGNum_zbin, *TGNum_zmin, *TGNum_zmax, *TGNum_DeltaX_GF, *TGNum_DeltaY_GF, *TGNum_DeltaZ_GF, *TGNum_sigma_GF;
    TGTextButton  *Button_exit;
@@ -208,13 +208,14 @@ public :
    TGNumberEntry *TGNum_scale_X, *TGNum_scale_Y, *TGNum_scale_Z;
    TGCheckButton *CheckBox_invert_X, *CheckBox_invert_Y, *CheckBox_invert_Z;
    TGCheckButton *CheckBox_gaussfilter, *CheckBox_sectoraverage;
-   TGButtonGroup *TGB_group_alignment_A, *TGB_group_alignment_B, *TGB_group_alignment_C, *TGB_group_alignment_D;
+   TGButtonGroup *TGB_group_alignment_A, *TGB_group_alignment_B, *TGB_group_alignment_C;
    TGTextEntry* TGText_outputname;
    Int_t sector_plot = 0;
    Int_t phi_plot    = 0;
    Int_t zbin_plot    = 0;
    vector<TGRadioButton*> vec_TRB_plot_data;
-   vector<TGRadioButton*> vec_select;
+   vector<TGRadioButton*> select_button;
+
    Int_t plot_data_use = 0;
    Int_t selected_file = 0;
    Int_t flag_plot_data_type = 0;
@@ -228,6 +229,7 @@ public :
    Bool_t flag_select2 = false;
    Bool_t ratio_pressed = false;
    Bool_t draw_ratio = false;
+   Bool_t just_started = true;
    Int_t global_position = 0;
       Int_t N_bins_Y_GF = 3;
    Int_t N_bins_X_GF = 3;
@@ -686,13 +688,11 @@ void voxResTree::Init()
     TGB_group_alignment_A = new TGButtonGroup(TGH_lowerB,"Deltas");
     TGB_group_alignment_B = new TGButtonGroup(TGH_lowerB,"Smoothed");
     TGB_group_alignment_C = new TGButtonGroup(TGH_lowerB,"Statistics");
-    TGB_group_alignment_D = new TGButtonGroup(TGH_lowerB,"Show");
 
     // control horizontal position of the text
     TGB_group_alignment_A ->SetTitlePos(TGGroupFrame::kCenter);
     TGB_group_alignment_B ->SetTitlePos(TGGroupFrame::kCenter);
     TGB_group_alignment_C ->SetTitlePos(TGGroupFrame::kCenter);
-    TGB_group_alignment_D ->SetTitlePos(TGGroupFrame::kCenter);
 
     vec_TRB_plot_data.resize(9);
     vec_TRB_plot_data[0] = new TGRadioButton(TGB_group_alignment_A, "Dx", kTextRight);
@@ -711,22 +711,12 @@ void voxResTree::Init()
         printf("Button Initiated: %d\n",i_button);
     }
 
-    vec_select.resize(2);
-    vec_select[0] = new TGRadioButton(TGB_group_alignment_D, "upper", kTextRight);
-    vec_select[1] = new TGRadioButton(TGB_group_alignment_D, "lower", kTextRight);
-    vec_select[0] ->Connect("Pressed()", "voxResTree", this, Form("Update_data_buttons(Int_t=%d, %d)", 0,1));
-    vec_select[1] ->Connect("Pressed()", "voxResTree", this, Form("Update_data_buttons(Int_t=%d, %d)", 1,1));
-
-
     TGB_group_alignment_A ->SetButton(kTextCenterX);
     TGB_group_alignment_B ->SetButton(kTextCenterX);
     TGB_group_alignment_C ->SetButton(kTextCenterX);
-    TGB_group_alignment_D ->SetButton(kTextCenterX);
     TGH_lowerB ->AddFrame(TGB_group_alignment_A, new TGLayoutHints(kLHintsExpandX));
     TGH_lowerB ->AddFrame(TGB_group_alignment_B, new TGLayoutHints(kLHintsExpandX));
     TGH_lowerB ->AddFrame(TGB_group_alignment_C, new TGLayoutHints(kLHintsExpandX));
-
-    TGH_lowerB ->AddFrame(TGB_group_alignment_D, new TGLayoutHints(kLHintsExpandX));
 
     //-------------------
 
@@ -746,6 +736,7 @@ void voxResTree::Init()
 
 
     // Lower split top frame
+    TGV_ExSel_master          = new TGVerticalFrame(TGH_lowerA);
     TGV_data_selection_master = new TGVerticalFrame(TGH_lowerA);
     TGV_data_output_master    = new TGVerticalFrame(TGH_lowerA);
     TGV_data_invert_master    = new TGVerticalFrame(TGH_lowerA);
@@ -785,17 +776,17 @@ void voxResTree::Init()
     fCombo_file[0]->Connect("Changed()", "voxResTree", this, Form("func_dummy(Int_t=%d)",5));
     //fCombo_file[0]->Connect("Changed()", "voxResTree", this, "DoNewFileSelection()");
     //fCombo_file[0]->Connect("Changed()", "voxResTree", this, Form("DoNewFileSelection(Int_t=%d)",0));
-
+    
     // exit button
-    Button_exit = new TGTextButton(TGH_lowerA, "&Exit ","gApplication->Terminate(0)");
-    TGH_lowerA->AddFrame(Button_exit, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    // Button_exit = new TGTextButton(TGH_lowerA, "&Exit ","gApplication->Terminate(0)");
+    // TGH_lowerA->AddFrame(Button_exit, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
 
     // check box scan data
-    CheckBox_scanData  = new TGCheckButton(TGH_lowerA, new TGHotString("Scan data"), -1);
-    CheckBox_scanData ->SetState(kButtonUp);
-    //CheckBox_scanData ->Connect("Clicked()", "voxResTree", this, "DoNewDataSelection()");
-    CheckBox_scanData ->Connect("Clicked()", "voxResTree", this,Form("DoNewDataSelection(Int_t=%d)",0));
-    TGH_lowerA    ->AddFrame(CheckBox_scanData, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    // CheckBox_scanData  = new TGCheckButton(TGH_lowerA, new TGHotString("Scan data"), -1);
+    // CheckBox_scanData ->SetState(kButtonUp);
+    // //CheckBox_scanData ->Connect("Clicked()", "voxResTree", this, "DoNewDataSelection()");
+    // CheckBox_scanData ->Connect("Clicked()", "voxResTree", this,Form("DoNewDataSelection(Int_t=%d)",0));
+    // TGH_lowerA    ->AddFrame(CheckBox_scanData, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
 
 
     // // check box get ratio
@@ -922,7 +913,7 @@ void voxResTree::Init()
 
 
     // Group Exit Export
-    GR_Exit  = new TGGroupFrame(TGH_lowerA,"Exit Export",kVerticalFrame);
+    GR_Exit  = new TGGroupFrame(TGV_ExSel_master,"Exit Export",kVerticalFrame);
     TGV_Exit = new TGVerticalFrame(GR_Exit);
     GR_Exit  ->AddFrame(TGV_Exit, new TGLayoutHints(kLHintsLeft,5,5,3,4));
 
@@ -936,6 +927,21 @@ void voxResTree::Init()
     Button_export->Connect("Clicked()", "voxResTree", this, "DoExport()");
     Button_export->SetToolTipText("Export map modified via inverse and/or Gaussian filter");
     TGV_Exit->AddFrame(Button_export, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+
+
+    // Show Buttons
+    GR_Select  = new TGGroupFrame(TGV_ExSel_master,"Select",kVerticalFrame);
+    TGV_Select = new TGVerticalFrame(GR_Select);
+    GR_Select  ->AddFrame(TGV_Select, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    
+    select_button.resize(2);
+    select_button[0] = new TGRadioButton(TGV_Select, "Show A", kTextRight);
+    select_button[1] = new TGRadioButton(TGV_Select, "Show B", kTextRight);
+    TGV_Select->AddFrame(select_button[0], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    TGV_Select->AddFrame(select_button[1], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+
+    select_button[0] ->Connect("Pressed()", "voxResTree", this, Form("Update_data_buttons(Int_t=%d, %d)", 0,1));
+    select_button[1] ->Connect("Pressed()", "voxResTree", this, Form("Update_data_buttons(Int_t=%d, %d)", 1,1));
 
     // check box scan data
     //CheckBox_scanData  = new TGCheckButton(TGH_lowerA, new TGHotString("Scan data"), -1);
@@ -1009,9 +1015,15 @@ void voxResTree::Init()
 
     TGV_data_selection_master    ->AddFrame(GR_data_selection_A, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGV_data_selection_master    ->AddFrame(GR_data_selection_B, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+
+    TGV_ExSel_master->AddFrame(GR_Exit, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGV_ExSel_master->AddFrame(GR_Select, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+
     TGV_data_output_master       ->AddFrame(GR_data_output, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGV_data_invert_master       ->AddFrame(GR_data_invert, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-    TGH_lowerA    ->AddFrame(GR_Exit, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    // TGH_lowerA    ->AddFrame(GR_Exit, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    // TGH_lowerA    ->AddFrame(GR_Select, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGH_lowerA    ->AddFrame(TGV_ExSel_master, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGH_lowerA    ->AddFrame(TGV_data_selection_master, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     //TGH_lowerA    ->AddFrame(CheckBox_scanData, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     //TGH_lowerA    ->AddFrame(CheckBox_invert, new TGLayoutHints(kLHintsLeft,5,5,3,4));
@@ -1660,21 +1672,21 @@ void voxResTree::Update_data_buttons(Int_t i_button_A, Int_t i_button_B)
     }
     else if(i_button_B == 1 && flag_select1 && flag_select2)
     {
-        for(Int_t i_button = 0; i_button < (Int_t)vec_select.size(); i_button++)
+        for(Int_t i_button = 0; i_button < (Int_t)select_button.size(); i_button++)
         {
-            vec_select[i_button] ->SetState(kButtonUp);
+            select_button[i_button] ->SetState(kButtonUp);
         }
-        vec_select[i_button_A] ->SetState(kButtonDown);
+        select_button[i_button_A] ->SetState(kButtonDown);
 
         selected_file = i_button_A;
     }
     else if(i_button_B == 1 && flag_select1 && !flag_select2)
     {
-        for(Int_t i_button = 0; i_button < (Int_t)vec_select.size(); i_button++)
+        for(Int_t i_button = 0; i_button < (Int_t)select_button.size(); i_button++)
         {
-            vec_select[i_button] ->SetState(kButtonUp);
+            select_button[i_button] ->SetState(kButtonUp);
         }
-        vec_select[i_button_A] ->SetState(kButtonDown);
+        select_button[i_button_A] ->SetState(kButtonDown);
     }
     else{
         selected_file = 0;
@@ -1813,6 +1825,10 @@ void voxResTree::DoNewDataSelection(Int_t i_position)
 
     // Load fist file from the position:
     // fCombo_file[i_position]->Select(0);
+    if(just_started){
+        just_started = false;
+        fCombo_file[i_position]->Select(0);
+    }
     global_position = i_position;
 }
 //---------------------------------------------------------------------------------
