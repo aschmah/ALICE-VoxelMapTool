@@ -161,6 +161,7 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     // Gaussian filtering
     if(flag_gaussfilter || flag_sectoraverage)
     {
+    printf("\n-- Gaus or Sectoraverage --\n");
     for(Long64_t jentry = 0; jentry < N_entries_loop; jentry++)
     {
         Long64_t ientry = LoadTree(jentry);
@@ -196,6 +197,7 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
 
     if(flag_sectoraverage)
     {
+        printf("\n-- Sectoraverage -- \n");
         for(Int_t voxX = 0; voxX < 152; voxX++)
         {
             for(Int_t voxY = 0; voxY < 15; voxY++)
@@ -227,6 +229,7 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
 
     if(flag_gaussfilter)
     {
+        printf("\n-- Gaussfilter -- \n");
         // XALEX
         for(Int_t i_sector = 0; i_sector < 36; i_sector++)
         {
