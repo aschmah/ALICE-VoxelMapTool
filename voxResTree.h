@@ -253,10 +253,9 @@ public :
    o2::tpc::TrackResiduals::VoxRes mVoxelResultsOut{};                                                                ///< the results from mVoxelResults are copied in here to be able to stream them
    o2::tpc::TrackResiduals::VoxRes* mVoxelResultsOutPtr{&mVoxelResultsOut};                                           ///< pointer to set the branch address to for the output
    std::unique_ptr<TTree> mTreeOut; ///< tree holding debug output
-   vector<o2::tpc::TrackResiduals::VoxRes> vec_VoxRes;
-   vector<Float_t> vec_entries_voxel;
+   vector<vector<o2::tpc::TrackResiduals::VoxRes>>vec_VoxRes;
+   vector<vector<Float_t>> vec_entries_voxel;
    //------------------------------------
-
 
    voxResTree(TTree *tree=0);
    virtual ~voxResTree();
@@ -385,12 +384,17 @@ void voxResTree::Init()
 
     printf("voxResTree::Init() \n");
 
-    vec_VoxRes.resize(410400);
-    vec_entries_voxel.resize(410400);
-    for(Int_t ientry = 0; ientry < (Int_t)vec_VoxRes.size(); ientry++)
-    {
-        vec_entries_voxel[ientry] = 0.0;
+    vec_VoxRes.resize(3);
+    vec_entries_voxel.resize(3);
+    for(Int_t i =0; i < 3; i++){
+        vec_VoxRes[i].resize(410400);
+        vec_entries_voxel[i].resize(410400);
+        // for(Int_t ientry = 0; ientry < (Int_t)vec_VoxRes[i].size(); ientry++)
+        // {
+        //     vec_entries_voxel[i][ientry] = 0.0;
+        // }
     }
+   
 
 
     SetRootGraphicStyle();
@@ -1170,6 +1174,7 @@ void voxResTree::Init()
     //DoNewDataSelection();
     Update_data_buttons(0,0);
     Update_data_buttons(0,1); // init
+    Update_delta_buttons(0,0);
 
 
     outputfile = new TFile("dZ_over_z_fit_params.root","RECREATE");
@@ -1828,8 +1833,205 @@ void voxResTree::DoExport()
 {
     printf("Start map export \n");
 
-    //------------------------------------
-    // output average map
+    TString TS_inputpos1 = "";
+    fCombo_file[0]->Select(0);
+    TS_inputpos1 =  fCombo_file[0]->GetSelectedEntry()->GetTitle();
+    printf("   directory: %s \n",TS_inputpos1.Data());
+
+    TString TS_inputpos2 = "";
+    fCombo_file[1]->Select(0);
+    TS_inputpos2 =  fCombo_file[1]->GetSelectedEntry()->GetTitle();
+    printf("   directory: %s \n",TS_inputpos2.Data());
+
+    printf("Opening File 1 ...");
+    TFile *tfile1 = TFile::Open(TS_inputpos1);
+    printf("Done\nGetting Tree 1 ...");
+    TTree *tree1 = (TTree*)tfile1->Get("voxResTree");
+    printf("Done\nOpening File 2 ...");
+
+    TFile *tfile2 = TFile::Open(TS_inputpos2);
+    printf("Done\nGetting Tree 2 ...");
+    TTree *tree2 = (TTree*)tfile2->Get("voxResTree");
+    printf("Done\nLoading Branch Addresses ...");
+
+    Float_t         D1[4];
+    Float_t         E1[4];
+    Float_t         DS1[4];
+    Float_t         DC1[4];
+    Float_t         EXYCorr1;
+    Float_t         dYSigMAD1;
+    Float_t         dZSigLTM1;
+    Float_t         stat1[4];  // z/x, y/x, x, entries
+    UChar_t         bvox1[3];
+    UChar_t         bsec1;
+    UChar_t         flags1;
+
+    tree1->SetBranchAddress("D[4]", D1);//, &b_voxRes_D); ///< values of extracted distortions
+    tree1->SetBranchAddress("E[4]", E1);//, &b_voxRes_E); ///< their errors
+    tree1->SetBranchAddress("DS[4]", DS1);//, &b_voxRes_DS); ///< smoothed residual
+    tree1->SetBranchAddress("DC[4]", DC1);//, &b_voxRes_DC); ///< Cheb parameterized residual
+    tree1->SetBranchAddress("EXYCorr", &EXYCorr1);//, &b_voxRes_EXYCorr); ///< correlation between extracted X and Y
+    tree1->SetBranchAddress("dYSigMAD", &dYSigMAD1);//, &b_voxRes_dYSigMAD); ///< MAD estimator of dY sigma (dispersion after slope removal)
+    tree1->SetBranchAddress("dZSigLTM", &dZSigLTM1);//, &b_voxRes_dZSigLTM); ///< Z sigma from unbinned LTM estimator
+    tree1->SetBranchAddress("stat[4]", stat1);//, &b_voxRes_stat); ///< statistics: averages of each voxel dimension + entries
+    tree1->SetBranchAddress("bvox[3]", bvox1);//, &b_voxRes_bvox); ///< voxel identifier: VoxZ, VoxF, VoxX
+    tree1->SetBranchAddress("bsec", &bsec1);//, &b_voxRes_bsec); ///< sector ID (0-35)
+    tree1->SetBranchAddress("flags", &flags1);//, &b_voxRes_flags); ///< status flag
+
+    Float_t         D2[4];
+    Float_t         E2[4];
+    Float_t         DS2[4];
+    Float_t         DC2[4];
+    Float_t         EXYCorr2;
+    Float_t         dYSigMAD2;
+    Float_t         dZSigLTM2;
+    Float_t         stat2[4];  // z/x, y/x, x, entries
+    UChar_t         bvox2[3];
+    UChar_t         bsec2;
+    UChar_t         flags2;
+
+    tree2->SetBranchAddress("D[4]", D2);//, &b_voxRes_D); ///< values of extracted distortions
+    tree2->SetBranchAddress("E[4]", E2);//, &b_voxRes_E); ///< their errors
+    tree2->SetBranchAddress("DS[4]", DS2);//, &b_voxRes_DS); ///< smoothed residual
+    tree2->SetBranchAddress("DC[4]", DC2);//, &b_voxRes_DC); ///< Cheb parameterized residual
+    tree2->SetBranchAddress("EXYCorr", &EXYCorr2);//, &b_voxRes_EXYCorr); ///< correlation between extracted X and Y
+    tree2->SetBranchAddress("dYSigMAD", &dYSigMAD2);//, &b_voxRes_dYSigMAD); ///< MAD estimator of dY sigma (dispersion after slope removal)
+    tree2->SetBranchAddress("dZSigLTM", &dZSigLTM2);//, &b_voxRes_dZSigLTM); ///< Z sigma from unbinned LTM estimator
+    tree2->SetBranchAddress("stat[4]", stat2);//, &b_voxRes_stat); ///< statistics: averages of each voxel dimension + entries
+    tree2->SetBranchAddress("bvox[3]", bvox2);//, &b_voxRes_bvox); ///< voxel identifier: VoxZ, VoxF, VoxX
+    tree2->SetBranchAddress("bsec", &bsec2);//, &b_voxRes_bsec); ///< sector ID (0-35)
+    tree2->SetBranchAddress("flags", &flags2);//, &b_voxRes_flags); ///< status flag
+    printf("Done\n");
+
+    Int_t entries1 = tree1->GetEntries();
+    Int_t entries2 = tree2->GetEntries();
+
+    printf("\nEntries 1: %d\n",entries1);
+    printf("\nEntries 2: %d\n",entries2);
+
+    Float_t         D[4];
+    Float_t         E[4];
+    Float_t         DS[4];
+    Float_t         DC[4];
+    Float_t         EXYCorr;
+    Float_t         dYSigMAD;
+    Float_t         dZSigLTM;
+    Float_t         stat[4];  // z/x, y/x, x, entries
+    UChar_t         bvox[3];
+    UChar_t         bsec;
+    UChar_t         flags;
+
+    for(Int_t ientry = 0; ientry < entries1; ientry++){
+        tree1->GetEntry(ientry);
+        Int_t index_average_map = bvox1[2]+152*bvox1[1]+152*15*bvox1[0]+152*15*5*bsec1;
+                                    // bvox_X+152*bvox_F+152*15*bvox_Z+152*15*5*sector
+        if(index_average_map > 410400) printf(" WARNING: index_average_map 1 out of range!! \n");
+        vec_VoxRes[0][index_average_map].D[0]      = (float)D1[0];
+        vec_VoxRes[0][index_average_map].D[1]      = (float)D1[1];
+        vec_VoxRes[0][index_average_map].D[2]      = (float)D1[2];
+
+        vec_VoxRes[0][index_average_map].DS[0]     = (float)DS1[0];
+        vec_VoxRes[0][index_average_map].DS[1]     = (float)DS1[1];
+        vec_VoxRes[0][index_average_map].DS[2]     = (float)DS1[2];
+
+        vec_VoxRes[0][index_average_map].DC[0]     = (float)DC1[0];
+        vec_VoxRes[0][index_average_map].DC[1]     = (float)DC1[1];
+        vec_VoxRes[0][index_average_map].DC[2]     = (float)DC1[2];
+
+        vec_VoxRes[0][index_average_map].E[0]      = (float)E1[0];
+        vec_VoxRes[0][index_average_map].E[1]      = (float)E1[1];
+        vec_VoxRes[0][index_average_map].E[2]      = (float)E1[2];
+
+        vec_VoxRes[0][index_average_map].stat[0]   = (float)stat1[0];
+        vec_VoxRes[0][index_average_map].stat[1]   = (float)stat1[1];
+        vec_VoxRes[0][index_average_map].stat[2]   = (float)stat1[2];
+        vec_VoxRes[0][index_average_map].stat[3]   = (float)stat1[3]; // number of entries used
+
+        vec_VoxRes[0][index_average_map].EXYCorr   = EXYCorr1;
+        vec_VoxRes[0][index_average_map].dYSigMAD  = dYSigMAD1;
+        vec_VoxRes[0][index_average_map].dZSigLTM  = dZSigLTM1;
+
+        vec_VoxRes[0][index_average_map].bvox[0]   = bvox1[0];
+        vec_VoxRes[0][index_average_map].bvox[1]   = bvox1[1];
+        vec_VoxRes[0][index_average_map].bvox[2]   = bvox1[2];
+        vec_VoxRes[0][index_average_map].bsec      = bsec1;
+        vec_VoxRes[0][index_average_map].flags     = 7;
+    }
+
+    // Loop over Tree 2
+    for(Int_t ientry = 0; ientry < entries2; ientry++){
+        tree2->GetEntry(ientry);
+        Int_t index_average_map = bvox2[2]+152*bvox2[1]+152*15*bvox2[0]+152*15*5*bsec2;
+        if(index_average_map > 410400) printf(" WARNING: index_average_map 2 out of range!! \n");
+
+        vec_VoxRes[1][index_average_map].D[0]      = (float)D2[0];
+        vec_VoxRes[1][index_average_map].D[1]      = (float)D2[1];
+        vec_VoxRes[1][index_average_map].D[2]      = (float)D2[2];
+
+        vec_VoxRes[1][index_average_map].DS[0]     = (float)DS2[0];
+        vec_VoxRes[1][index_average_map].DS[1]     = (float)DS2[1];
+        vec_VoxRes[1][index_average_map].DS[2]     = (float)DS2[2];
+
+        vec_VoxRes[1][index_average_map].DC[0]     = (float)DC2[0];
+        vec_VoxRes[1][index_average_map].DC[1]     = (float)DC2[1];
+        vec_VoxRes[1][index_average_map].DC[2]     = (float)DC2[2];
+
+        vec_VoxRes[1][index_average_map].E[0]      = (float)E2[0];
+        vec_VoxRes[1][index_average_map].E[1]      = (float)E2[1];
+        vec_VoxRes[1][index_average_map].E[2]      = (float)E2[2];
+
+        vec_VoxRes[1][index_average_map].stat[0]   = (float)stat2[0];
+        vec_VoxRes[1][index_average_map].stat[1]   = (float)stat2[1];
+        vec_VoxRes[1][index_average_map].stat[2]   = (float)stat2[2];
+        vec_VoxRes[1][index_average_map].stat[3]   = (float)stat2[3]; // number of entries used
+
+        vec_VoxRes[1][index_average_map].EXYCorr   = EXYCorr2;
+        vec_VoxRes[1][index_average_map].dYSigMAD  = dYSigMAD2;
+        vec_VoxRes[1][index_average_map].dZSigLTM  = dZSigLTM2;
+
+        vec_VoxRes[1][index_average_map].bvox[0]   = bvox2[0];
+        vec_VoxRes[1][index_average_map].bvox[1]   = bvox2[1];
+        vec_VoxRes[1][index_average_map].bvox[2]   = bvox2[2];
+        vec_VoxRes[1][index_average_map].bsec      = bsec2;
+        vec_VoxRes[1][index_average_map].flags     = 7;
+    }
+
+
+    for(Int_t index_average_map = 0; index_average_map < (Int_t)vec_VoxRes[0].size(); index_average_map++){
+        vec_VoxRes[2][index_average_map].D[0]      = vec_VoxRes[delta_pressed[0]][index_average_map].D[0];
+        vec_VoxRes[2][index_average_map].D[1]      = vec_VoxRes[delta_pressed[1]][index_average_map].D[1];
+        vec_VoxRes[2][index_average_map].D[2]      = vec_VoxRes[delta_pressed[2]][index_average_map].D[2];
+
+        vec_VoxRes[2][index_average_map].DS[0]     = vec_VoxRes[delta_pressed[0]][index_average_map].DS[0];
+        vec_VoxRes[2][index_average_map].DS[1]     = vec_VoxRes[delta_pressed[1]][index_average_map].DS[1];
+        vec_VoxRes[2][index_average_map].DS[2]     = vec_VoxRes[delta_pressed[2]][index_average_map].DS[2];
+
+        vec_VoxRes[2][index_average_map].DC[0]     = vec_VoxRes[delta_pressed[0]][index_average_map].DC[0];
+        vec_VoxRes[2][index_average_map].DC[1]     = vec_VoxRes[delta_pressed[1]][index_average_map].DC[1];
+        vec_VoxRes[2][index_average_map].DC[2]     = vec_VoxRes[delta_pressed[2]][index_average_map].DC[2];
+
+        vec_VoxRes[2][index_average_map].E[0]      = vec_VoxRes[delta_pressed[0]][index_average_map].E[0];
+        vec_VoxRes[2][index_average_map].E[1]      = vec_VoxRes[delta_pressed[1]][index_average_map].E[1];
+        vec_VoxRes[2][index_average_map].E[2]      = vec_VoxRes[delta_pressed[2]][index_average_map].E[2];
+
+        vec_VoxRes[2][index_average_map].stat[0]   = vec_VoxRes[0][index_average_map].stat[0];
+        vec_VoxRes[2][index_average_map].stat[1]   = vec_VoxRes[0][index_average_map].stat[1];
+        vec_VoxRes[2][index_average_map].stat[2]   = vec_VoxRes[0][index_average_map].stat[2];
+        vec_VoxRes[2][index_average_map].stat[3]   = vec_VoxRes[0][index_average_map].stat[3]; // number of entries used
+
+        vec_VoxRes[2][index_average_map].EXYCorr   = vec_VoxRes[0][index_average_map].EXYCorr;
+        vec_VoxRes[2][index_average_map].dYSigMAD  = vec_VoxRes[0][index_average_map].dYSigMAD;
+        vec_VoxRes[2][index_average_map].dZSigLTM  = vec_VoxRes[0][index_average_map].dZSigLTM;
+
+        vec_VoxRes[2][index_average_map].bvox[0]   = vec_VoxRes[0][index_average_map].bvox[0];
+        vec_VoxRes[2][index_average_map].bvox[1]   = vec_VoxRes[0][index_average_map].bvox[1];
+        vec_VoxRes[2][index_average_map].bvox[2]   = vec_VoxRes[0][index_average_map].bvox[2];
+        vec_VoxRes[2][index_average_map].bsec      = vec_VoxRes[0][index_average_map].bsec;
+        vec_VoxRes[2][index_average_map].flags     = vec_VoxRes[0][index_average_map].flags;
+    }
+
+
+
     TString TS_export =  fCombo_positions[2]->GetSelectedEntry()->GetTitle();
     TS_export += TGText_outputname ->GetDisplayText();
     cout << "Export map name: " << TS_export.Data() << endl;
@@ -1837,9 +2039,9 @@ void voxResTree::DoExport()
     mTreeOut = std::make_unique<TTree>("voxResTree", "Voxel results and statistics");
     mTreeOut->Branch("voxRes", &mVoxelResultsOutPtr);
 
-    for(Int_t ientry = 0; ientry < (Int_t)vec_VoxRes.size(); ientry++)
+    for(Int_t ientry = 0; ientry < (Int_t)vec_VoxRes[2].size(); ientry++)
     {
-        mVoxelResultsOut = vec_VoxRes[ientry];
+        mVoxelResultsOut = vec_VoxRes[2][ientry];
         mTreeOut ->Fill();
     }
 
@@ -1922,7 +2124,6 @@ void voxResTree::DoNewDataSelection(Int_t i_position)
 void voxResTree::DoNewFileSelection(Int_t i_file)
 {
     fCombo_file[global_position]->Select(i_file);
-
     
     printf("voxResTree::DoNewFileSelection(%d) \n",global_position);
     //printf("voxResTree::DoNewFileSelection(%d) \n",i_select);

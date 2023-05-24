@@ -383,37 +383,37 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
         if(index_average_map > 410400) printf("WARNING: index_average_map out of range! \n");
 
         //printf("index_average_map: %d, DXorig: %4.3f \n",index_average_map,DXorig);
-        vec_VoxRes[index_average_map].D[0]      = (float)DXorig;
-        vec_VoxRes[index_average_map].D[1]      = (float)DYorig;
-        vec_VoxRes[index_average_map].D[2]      = (float)DZorig;
+        vec_VoxRes[0][index_average_map].D[0]      = (float)DXorig;
+        vec_VoxRes[0][index_average_map].D[1]      = (float)DYorig;
+        vec_VoxRes[0][index_average_map].D[2]      = (float)DZorig;
 
-        vec_VoxRes[index_average_map].DS[0]     = (float)DX;
-        vec_VoxRes[index_average_map].DS[1]     = (float)DY;
-        vec_VoxRes[index_average_map].DS[2]     = (float)DZ;
+        vec_VoxRes[0][index_average_map].DS[0]     = (float)DX;
+        vec_VoxRes[0][index_average_map].DS[1]     = (float)DY;
+        vec_VoxRes[0][index_average_map].DS[2]     = (float)DZ;
 
-        vec_VoxRes[index_average_map].DC[0]     = (float)DX;
-        vec_VoxRes[index_average_map].DC[1]     = (float)DY;
-        vec_VoxRes[index_average_map].DC[2]     = (float)DZ;
+        vec_VoxRes[0][index_average_map].DC[0]     = (float)DX;
+        vec_VoxRes[0][index_average_map].DC[1]     = (float)DY;
+        vec_VoxRes[0][index_average_map].DC[2]     = (float)DZ;
 
-        vec_VoxRes[index_average_map].E[0]      = (float)E[0];
-        vec_VoxRes[index_average_map].E[1]      = (float)E[1];
-        vec_VoxRes[index_average_map].E[2]      = (float)E[2];
+        vec_VoxRes[0][index_average_map].E[0]      = (float)E[0];
+        vec_VoxRes[0][index_average_map].E[1]      = (float)E[1];
+        vec_VoxRes[0][index_average_map].E[2]      = (float)E[2];
 
-        vec_VoxRes[index_average_map].stat[0]   = (float)stat[0];
-        vec_VoxRes[index_average_map].stat[1]   = (float)stat[1];
-        vec_VoxRes[index_average_map].stat[2]   = (float)stat[2];
-        vec_VoxRes[index_average_map].stat[3]   = (float)stat[3]; // number of entries used
+        vec_VoxRes[0][index_average_map].stat[0]   = (float)stat[0];
+        vec_VoxRes[0][index_average_map].stat[1]   = (float)stat[1];
+        vec_VoxRes[0][index_average_map].stat[2]   = (float)stat[2];
+        vec_VoxRes[0][index_average_map].stat[3]   = (float)stat[3]; // number of entries used
 
 
-        vec_VoxRes[index_average_map].EXYCorr   = EXYCorr;
-        vec_VoxRes[index_average_map].dYSigMAD  = dYSigMAD;
-        vec_VoxRes[index_average_map].dZSigLTM  = dZSigLTM;
+        vec_VoxRes[0][index_average_map].EXYCorr   = EXYCorr;
+        vec_VoxRes[0][index_average_map].dYSigMAD  = dYSigMAD;
+        vec_VoxRes[0][index_average_map].dZSigLTM  = dZSigLTM;
 
-        vec_VoxRes[index_average_map].bvox[0]   = bvox[0];
-        vec_VoxRes[index_average_map].bvox[1]   = bvox[1];
-        vec_VoxRes[index_average_map].bvox[2]   = bvox[2];
-        vec_VoxRes[index_average_map].bsec      = bsec;
-        vec_VoxRes[index_average_map].flags     = 7;
+        vec_VoxRes[0][index_average_map].bvox[0]   = bvox[0];
+        vec_VoxRes[0][index_average_map].bvox[1]   = bvox[1];
+        vec_VoxRes[0][index_average_map].bvox[2]   = bvox[2];
+        vec_VoxRes[0][index_average_map].bsec      = bsec;
+        vec_VoxRes[0][index_average_map].flags     = 7;
         //--------------------------------------------------
 
 
