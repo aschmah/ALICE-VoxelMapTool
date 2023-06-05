@@ -206,9 +206,9 @@ public :
    TGCheckButton* CheckBox_getRatio;
    TGHorizontalFrame *TGH_scale_X, *TGH_scale_Y, *TGH_scale_Z;
    TGHorizontalFrame *TGH_select_DX, *TGH_select_DY, *TGH_select_DZ;
-   TGNumberEntry *TGNum_scale_X, *TGNum_scale_Y, *TGNum_scale_Z;
-   TGCheckButton *CheckBox_invert_X, *CheckBox_invert_Y, *CheckBox_invert_Z;
-   TGCheckButton *CheckBox_gaussfilter, *CheckBox_sectoraverage;
+   TGNumberEntry *TGNum_scale_X[2], *TGNum_scale_Y[2], *TGNum_scale_Z[2];
+   TGCheckButton *CheckBox_invert_X[2], *CheckBox_invert_Y[2], *CheckBox_invert_Z[2];
+   TGCheckButton *CheckBox_gaussfilter[2], *CheckBox_sectoraverage[2];
    TGButtonGroup *TGB_group_alignment_A, *TGB_group_alignment_B, *TGB_group_alignment_C;
    TGTextEntry* TGText_outputname;
    Int_t sector_plot = 0;
@@ -235,7 +235,7 @@ public :
    Bool_t draw_ratio = false;
    Bool_t just_started = true;
    Int_t global_position = 0;
-      Int_t N_bins_Y_GF = 3;
+   Int_t N_bins_Y_GF = 3;
    Int_t N_bins_X_GF = 3;
    Int_t N_bins_Z_GF = 1;
    Double_t sigma_GF = 1.0;
@@ -275,10 +275,11 @@ public :
    void     DoExport();
    void     DoNewDataSelection(Int_t i_position);
    void     func_dummy(Int_t i_select);
-   void     DoNewDataSelection();
+   //void     DoNewDataSelection();
    //void     DoNewFileSelection(Int_t i_select);
    void     DoNewFileSelection(Int_t i_file);
    void     GetRatio();
+   void     Apply_filter();
    void     InitChain();
    void     SetStatusText(const char *txt, Int_t pi);
    void     EventInfo(Int_t event, Int_t px, Int_t py, TObject *selected);
@@ -751,7 +752,7 @@ void voxResTree::Init()
     // Lower split top frame
     TGV_ExSel_master          = new TGVerticalFrame(TGH_lowerA);
     TGV_data_selection_master = new TGVerticalFrame(TGH_lowerA);
-    TGV_DSel_master           = new TGVerticalFrame(TGH_lowerA);
+    //TGV_DSel_master           = new TGVerticalFrame(TGH_lowerA);
     TGV_data_output_master    = new TGVerticalFrame(TGH_lowerA);
     TGV_data_invert_master    = new TGVerticalFrame(TGH_lowerA);
 
@@ -772,7 +773,7 @@ void voxResTree::Init()
         HistName += "/";
         fCombo_positions[0]->AddEntry(HistName.Data(),i_pos_entry);
     }
-    fCombo_positions[0]->Resize(520, 20);
+    fCombo_positions[0]->Resize(400, 20);
     fCombo_positions[0]->Select(0);
     fCombo_positions[0]->SetBackgroundColor(wcolor);
     fCombo_positions[0]->Connect("Changed()", "voxResTree", this,Form("DoNewDataSelection(Int_t=%d)",0));
@@ -781,7 +782,7 @@ void voxResTree::Init()
     // file selection
     fCombo_file[0] = new TGComboBox(TGV_data_selection_A, 88);
     TGV_data_selection_A->AddFrame(fCombo_file[0], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
-    fCombo_file[0]->Resize(520, 20);
+    fCombo_file[0]->Resize(400, 20);
     fCombo_file[0]->Select(0);
     fCombo_file[0]->SetBackgroundColor(wcolor);
 
@@ -820,7 +821,7 @@ void voxResTree::Init()
         HistName += "/";
         fCombo_positions[1]->AddEntry(HistName.Data(),i_pos_entry);
     }
-    fCombo_positions[1]->Resize(520, 20);
+    fCombo_positions[1]->Resize(400, 20);
     fCombo_positions[1]->Select(0);
     fCombo_positions[1]->SetBackgroundColor(wcolor);
     fCombo_positions[1]->Connect("Changed()", "voxResTree", this, Form("DoNewDataSelection(Int_t=%d)",1));
@@ -828,7 +829,7 @@ void voxResTree::Init()
     // file selection
     fCombo_file[1] = new TGComboBox(TGV_data_selection_B, 88);
     TGV_data_selection_B->AddFrame(fCombo_file[1], new TGLayoutHints(kLHintsLeft,5,5,3,4));
-    fCombo_file[1]->Resize(520, 20);
+    fCombo_file[1]->Resize(400, 20);
     fCombo_file[1]->Select(0);
     fCombo_file[1]->SetBackgroundColor(wcolor);
 
@@ -861,27 +862,44 @@ void voxResTree::Init()
 
     // check box invert sign
     TGH_scale_X = new TGHorizontalFrame(TGV_data_invert);
-    CheckBox_invert_X  = new TGCheckButton(TGH_scale_X, new TGHotString("X"), -1);
-    CheckBox_invert_X ->SetState(kButtonUp);
-    TGNum_scale_X = new TGNumberEntry(TGH_scale_X, 1.0, 3,(TGNumberFormat::EStyle) 1);
-    TGH_scale_X ->AddFrame(CheckBox_invert_X, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-    TGH_scale_X ->AddFrame(TGNum_scale_X, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    CheckBox_invert_X[0]  = new TGCheckButton(TGH_scale_X, new TGHotString("XA"), -1);
+    CheckBox_invert_X[1]  = new TGCheckButton(TGH_scale_X, new TGHotString("XB"), -1);
+    CheckBox_invert_X[0] ->SetState(kButtonUp);
+    CheckBox_invert_X[1] ->SetState(kButtonUp);
+    TGNum_scale_X[0] = new TGNumberEntry(TGH_scale_X, 1.0, 3,(TGNumberFormat::EStyle) 1);
+    TGNum_scale_X[1] = new TGNumberEntry(TGH_scale_X, 1.0, 3,(TGNumberFormat::EStyle) 1);
+    TGH_scale_X ->AddFrame(CheckBox_invert_X[0], new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGH_scale_X ->AddFrame(CheckBox_invert_X[1], new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGH_scale_X ->AddFrame(TGNum_scale_X[0], new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGH_scale_X ->AddFrame(TGNum_scale_X[1], new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGV_data_invert   ->AddFrame(TGH_scale_X, new TGLayoutHints(kLHintsLeft,5,5,3,4));
 
+
     TGH_scale_Y = new TGHorizontalFrame(TGV_data_invert);
-    CheckBox_invert_Y  = new TGCheckButton(TGH_scale_Y, new TGHotString("Y"), -1);
-    CheckBox_invert_Y ->SetState(kButtonUp);
-    TGNum_scale_Y = new TGNumberEntry(TGH_scale_Y, 1.0, 3,(TGNumberFormat::EStyle) 1);
-    TGH_scale_Y ->AddFrame(CheckBox_invert_Y, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-    TGH_scale_Y ->AddFrame(TGNum_scale_Y, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    CheckBox_invert_Y[0]  = new TGCheckButton(TGH_scale_Y, new TGHotString("YA"), -1);
+    CheckBox_invert_Y[1]  = new TGCheckButton(TGH_scale_Y, new TGHotString("YB"), -1);
+    CheckBox_invert_Y[0] ->SetState(kButtonUp);
+    CheckBox_invert_Y[1] ->SetState(kButtonUp);
+    TGNum_scale_Y[0] = new TGNumberEntry(TGH_scale_Y, 1.0, 3,(TGNumberFormat::EStyle) 1);
+    TGNum_scale_Y[1] = new TGNumberEntry(TGH_scale_Y, 1.0, 3,(TGNumberFormat::EStyle) 1);
+    TGH_scale_Y ->AddFrame(CheckBox_invert_Y[0], new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGH_scale_Y ->AddFrame(CheckBox_invert_Y[1], new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGH_scale_Y ->AddFrame(TGNum_scale_Y[0], new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGH_scale_Y ->AddFrame(TGNum_scale_Y[1], new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGV_data_invert   ->AddFrame(TGH_scale_Y, new TGLayoutHints(kLHintsLeft,5,5,3,4));
 
+
     TGH_scale_Z = new TGHorizontalFrame(TGV_data_invert);
-    CheckBox_invert_Z  = new TGCheckButton(TGH_scale_Z, new TGHotString("Z"), -1);
-    CheckBox_invert_Z ->SetState(kButtonUp);
-    TGNum_scale_Z = new TGNumberEntry(TGH_scale_Z, 1.0, 3,(TGNumberFormat::EStyle) 1);
-    TGH_scale_Z ->AddFrame(CheckBox_invert_Z, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-    TGH_scale_Z ->AddFrame(TGNum_scale_Z, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    CheckBox_invert_Z[0]  = new TGCheckButton(TGH_scale_Z, new TGHotString("ZA"), -1);
+    CheckBox_invert_Z[1]  = new TGCheckButton(TGH_scale_Z, new TGHotString("ZB"), -1);
+    CheckBox_invert_Z[0] ->SetState(kButtonUp);
+    CheckBox_invert_Z[1] ->SetState(kButtonUp);
+    TGNum_scale_Z[0] = new TGNumberEntry(TGH_scale_Z, 1.0, 3,(TGNumberFormat::EStyle) 1);
+    TGNum_scale_Z[1] = new TGNumberEntry(TGH_scale_Z, 1.0, 3,(TGNumberFormat::EStyle) 1);
+    TGH_scale_Z ->AddFrame(CheckBox_invert_Z[0], new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGH_scale_Z ->AddFrame(CheckBox_invert_Z[1], new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGH_scale_Z ->AddFrame(TGNum_scale_Z[0], new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGH_scale_Z ->AddFrame(TGNum_scale_Z[1], new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGV_data_invert   ->AddFrame(TGH_scale_Z, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     //--------------------------------------
 
@@ -917,22 +935,49 @@ void voxResTree::Init()
     TGText_outputname ->Resize(200, 20);
 
 
-    //fCombo_file[2] = new TGComboBox(TGV_data_output, 88);
-    //TGV_data_output->AddFrame(fCombo_file[2], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
-    //fCombo_file[2]->Resize(520, 20);
-    //fCombo_file[2]->Select(0);
-    //fCombo_file[2]->SetBackgroundColor(wcolor);
 
-    //fCombo_file[0]->Connect("ReturnPressed()", "voxResTree", this, "HandleButtonsGeneral(=14)");
-    //fCombo_file[2]->Connect("Selected(Int_t)", "voxResTree", this, "DoNewFileSelection()");
-    //fCombo_file[2]->Connect("Changed()", "voxResTree", this, Form("func_dummy(Int_t=%d)",5));
-    //fCombo_file[0]->Connect("Changed()", "voxResTree", this, "DoNewFileSelection()");
-    //fCombo_file[0]->Connect("Changed()", "voxResTree", this, Form("DoNewFileSelection(Int_t=%d)",0));
+
+
+
+    TGH_select_DX = new TGHorizontalFrame(TGV_data_output);
+    TGH_select_DY = new TGHorizontalFrame(TGV_data_output);
+    TGH_select_DZ = new TGHorizontalFrame(TGV_data_output);
+    
+    delta_button.resize(2);
+    delta_button[0].resize(3);
+    delta_button[1].resize(3);
+
+    delta_button[0][0] = new TGRadioButton(TGH_select_DX, "DX", kTextRight);
+    delta_button[0][1] = new TGRadioButton(TGH_select_DY, "DY", kTextRight);
+    delta_button[0][2] = new TGRadioButton(TGH_select_DZ, "DZ", kTextRight);
+    delta_button[1][0] = new TGRadioButton(TGH_select_DX, "DX", kTextRight);
+    delta_button[1][1] = new TGRadioButton(TGH_select_DY, "DY", kTextRight);
+    delta_button[1][2] = new TGRadioButton(TGH_select_DZ, "DZ", kTextRight);
+
+    TGH_select_DX->AddFrame(delta_button[0][0], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    TGH_select_DX->AddFrame(delta_button[1][0], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    TGV_data_output ->AddFrame(TGH_select_DX, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+
+    TGH_select_DY->AddFrame(delta_button[0][1], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    TGH_select_DY->AddFrame(delta_button[1][1], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    TGV_data_output ->AddFrame(TGH_select_DY, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+
+    TGH_select_DZ->AddFrame(delta_button[0][2], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    TGH_select_DZ->AddFrame(delta_button[1][2], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    TGV_data_output ->AddFrame(TGH_select_DZ, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+
+    delta_button[0][0] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 0,0));
+    delta_button[0][1] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 0,1));
+    delta_button[0][2] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 0,2));
+    delta_button[1][0] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 1,0));
+    delta_button[1][1] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 1,1));
+    delta_button[1][2] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 1,2));
     //--------------------------------------
 
 
 
 
+    //--------------------------------------
     // Group Exit Export
     GR_Exit  = new TGGroupFrame(TGV_ExSel_master,"Exit Export",kVerticalFrame);
     TGV_Exit = new TGVerticalFrame(GR_Exit);
@@ -968,50 +1013,13 @@ void voxResTree::Init()
     //CheckBox_scanData  = new TGCheckButton(TGH_lowerA, new TGHotString("Scan data"), -1);
     //CheckBox_scanData ->SetState(kButtonUp);
     //CheckBox_scanData ->Connect("Clicked()", "voxResTree", this,Form("DoNewDataSelection(Int_t=%d)",0));
-
-    // Delta - Selection
-    GR_delta  = new TGGroupFrame(TGV_DSel_master,"Delta Selection",kVerticalFrame);
-    TGV_delta = new TGVerticalFrame(GR_delta);
-    GR_delta  ->AddFrame(TGV_delta, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-
-    TGH_select_DX = new TGHorizontalFrame(TGV_delta);
-    TGH_select_DY = new TGHorizontalFrame(TGV_delta);
-    TGH_select_DZ = new TGHorizontalFrame(TGV_delta);
-    
-    delta_button.resize(2);
-    delta_button[0].resize(3);
-    delta_button[1].resize(3);
-
-    delta_button[0][0] = new TGRadioButton(TGH_select_DX, "DX", kTextRight);
-    delta_button[0][1] = new TGRadioButton(TGH_select_DY, "DY", kTextRight);
-    delta_button[0][2] = new TGRadioButton(TGH_select_DZ, "DZ", kTextRight);
-    delta_button[1][0] = new TGRadioButton(TGH_select_DX, "DX", kTextRight);
-    delta_button[1][1] = new TGRadioButton(TGH_select_DY, "DY", kTextRight);
-    delta_button[1][2] = new TGRadioButton(TGH_select_DZ, "DZ", kTextRight);
-
-    TGH_select_DX->AddFrame(delta_button[0][0], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
-    TGH_select_DX->AddFrame(delta_button[1][0], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
-    TGV_delta ->AddFrame(TGH_select_DX, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-
-    TGH_select_DY->AddFrame(delta_button[0][1], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
-    TGH_select_DY->AddFrame(delta_button[1][1], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
-    TGV_delta ->AddFrame(TGH_select_DY, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-
-    TGH_select_DZ->AddFrame(delta_button[0][2], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
-    TGH_select_DZ->AddFrame(delta_button[1][2], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
-    TGV_delta ->AddFrame(TGH_select_DZ, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-
-    delta_button[0][0] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 0,0));
-    delta_button[0][1] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 0,1));
-    delta_button[0][2] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 0,2));
-    delta_button[1][0] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 1,0));
-    delta_button[1][1] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 1,1));
-    delta_button[1][2] ->Connect("Pressed()", "voxResTree", this, Form("Update_delta_buttons(Int_t=%d, %d)", 1,2));
+    //--------------------------------------
 
 
 
 
 
+    //---------------------------------------
     // Group Gaussian filter
     GR_bottom_GF  = new TGGroupFrame(TGH_lowerA,"Gauss filter",kVerticalFrame);
     TGV_GF        = new TGVerticalFrame(GR_bottom_GF);
@@ -1020,18 +1028,23 @@ void voxResTree::Init()
 
     // check box Gaussian filter
     //CheckBox_gaussfilter  = new TGCheckButton(TGH_lowerA, new TGHotString("Gauss filter"), -1);
-    CheckBox_gaussfilter  = new TGCheckButton(TGV_GF, new TGHotString("Gauss filter"), -1);
-    CheckBox_gaussfilter ->SetState(kButtonUp);
+    CheckBox_gaussfilter[0]  = new TGCheckButton(TGV_GF, new TGHotString("GFA"), -1);
+    CheckBox_gaussfilter[1]  = new TGCheckButton(TGV_GF, new TGHotString("GFB"), -1);
+    CheckBox_gaussfilter[0] ->SetState(kButtonUp);
+    CheckBox_gaussfilter[1] ->SetState(kButtonUp);
     //CheckBox_gaussfilter ->Connect("Clicked()", "voxResTree", this,Form("DoNewDataSelection(Int_t=%d)",0));
 
     // check box sector average
-    CheckBox_sectoraverage  = new TGCheckButton(TGV_GF, new TGHotString("sector average"), -1);
-    CheckBox_sectoraverage ->SetState(kButtonUp);
+    CheckBox_sectoraverage[0]  = new TGCheckButton(TGV_GF, new TGHotString("SAA"), -1);
+    CheckBox_sectoraverage[1]  = new TGCheckButton(TGV_GF, new TGHotString("SAB"), -1);
+    CheckBox_sectoraverage[0] ->SetState(kButtonUp);
+    CheckBox_sectoraverage[1] ->SetState(kButtonUp);
 
     // Apply Gaussian filter button
     Button_applyGF = new TGTextButton(TGV_GF, "&Apply filter");
     //Button_applyGF->Connect("Clicked()", "voxResTree", this,Form("DoNewDataSelection(Int_t=%d)",0));
-    Button_applyGF->Connect("Clicked()", "voxResTree", this,Form("Loop(Int_t=%d,%d)",-1,global_position));
+    //Button_applyGF->Connect("Clicked()", "voxResTree", this,Form("Loop(Int_t=%d, %d)",-1,global_position));
+    Button_applyGF->Connect("Clicked()", "voxResTree",this,"Apply_filter()");
     Button_applyGF->SetToolTipText("Apply Gaussian filter");
     //TGH_lowerA->AddFrame(Button_export, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
 
@@ -1067,8 +1080,10 @@ void voxResTree::Init()
     //TGNum_DeltaX_GF       ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DY_X_vs_Z()");
     //TGNum_DeltaY_GF       ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DY_X_vs_Z()");
     //TGV_GF        ->AddFrame(CheckBox_invert,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
-    TGV_GF        ->AddFrame(CheckBox_gaussfilter,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
-    TGV_GF        ->AddFrame(CheckBox_sectoraverage,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_GF        ->AddFrame(CheckBox_gaussfilter[0],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_GF        ->AddFrame(CheckBox_gaussfilter[1],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_GF        ->AddFrame(CheckBox_sectoraverage[0],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_GF        ->AddFrame(CheckBox_sectoraverage[1],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
     TGV_GF        ->AddFrame(TGH_DeltaX_GF,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
     TGV_GF        ->AddFrame(TGH_DeltaY_GF,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
     TGV_GF        ->AddFrame(TGH_DeltaZ_GF,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
@@ -1081,7 +1096,7 @@ void voxResTree::Init()
     TGV_ExSel_master->AddFrame(GR_Exit, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGV_ExSel_master->AddFrame(GR_Select, new TGLayoutHints(kLHintsLeft,5,5,3,4));
 
-    TGV_DSel_master->AddFrame(GR_delta, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    //TGV_DSel_master->AddFrame(GR_delta, new TGLayoutHints(kLHintsLeft,5,5,3,4));
 
     TGV_data_output_master       ->AddFrame(GR_data_output, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGV_data_invert_master       ->AddFrame(GR_data_invert, new TGLayoutHints(kLHintsLeft,5,5,3,4));
@@ -1091,7 +1106,7 @@ void voxResTree::Init()
     // TGH_lowerA    ->AddFrame(GR_Select, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGH_lowerA    ->AddFrame(TGV_ExSel_master, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGH_lowerA    ->AddFrame(TGV_data_selection_master, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-    TGH_lowerA    ->AddFrame(TGV_DSel_master, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    //TGH_lowerA    ->AddFrame(TGV_DSel_master, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     //TGH_lowerA    ->AddFrame(CheckBox_scanData, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     //TGH_lowerA    ->AddFrame(CheckBox_invert, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGH_lowerA    ->AddFrame(GR_bottom_GF, new TGLayoutHints(kLHintsLeft,5,5,3,4));
@@ -1262,6 +1277,15 @@ void voxResTree::Change_number_entry()
     TGNum_zbin ->SetNumber(zbin_plot);
 
     Update_DY_X_vs_Z();
+}
+//---------------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------------
+void voxResTree::Apply_filter()
+{
+    Loop(-1,global_position);
 }
 //---------------------------------------------------------------------------------
 
@@ -1726,7 +1750,7 @@ void voxResTree::Update_DY_X_vs_Z()
 //---------------------------------------------------------------------------------
 void voxResTree::Update_data_buttons(Int_t i_button_A, Int_t i_button_B)
 {
-    //printf("A,B: {%d, %d} \n",i_button_A,i_button_B);
+    printf("A,B: {%d, %d} \n",i_button_A,i_button_B);
     //enum  	EButtonState { kButtonUp , kButtonDown , kButtonEngaged , kButtonDisabled }
     if(i_button_B == 0)
     {
@@ -1759,7 +1783,15 @@ void voxResTree::Update_data_buttons(Int_t i_button_A, Int_t i_button_B)
     else{
         selected_file = 0;
     }
-    Update_DY_X_vs_Z();
+
+
+    //DoNewDataSelection(selected_file);
+    global_position = selected_file;
+    Int_t selected = fCombo_file[selected_file]->GetSelected();
+    DoNewFileSelection(selected);
+    printf("global_position: %d \n",global_position);
+    //Loop(-1,selected_file);
+    //Update_DY_X_vs_Z();
 
 
 }
@@ -1833,6 +1865,7 @@ void voxResTree::DoExport()
 {
     printf("Start map export \n");
 
+    /*
     TString TS_inputpos1 = "";
     fCombo_file[0]->Select(0);
     TS_inputpos1 =  fCombo_file[0]->GetSelectedEntry()->GetTitle();
@@ -1921,7 +1954,8 @@ void voxResTree::DoExport()
     UChar_t         bsec;
     UChar_t         flags;
 
-    for(Int_t ientry = 0; ientry < entries1; ientry++){
+    for(Int_t ientry = 0; ientry < entries1; ientry++)
+    {
         tree1->GetEntry(ientry);
         Int_t index_average_map = bvox1[2]+152*bvox1[1]+152*15*bvox1[0]+152*15*5*bsec1;
                                     // bvox_X+152*bvox_F+152*15*bvox_Z+152*15*5*sector
@@ -1959,7 +1993,8 @@ void voxResTree::DoExport()
     }
 
     // Loop over Tree 2
-    for(Int_t ientry = 0; ientry < entries2; ientry++){
+    for(Int_t ientry = 0; ientry < entries2; ientry++)
+    {
         tree2->GetEntry(ientry);
         Int_t index_average_map = bvox2[2]+152*bvox2[1]+152*15*bvox2[0]+152*15*5*bsec2;
         if(index_average_map > 410400) printf(" WARNING: index_average_map 2 out of range!! \n");
@@ -1995,9 +2030,10 @@ void voxResTree::DoExport()
         vec_VoxRes[1][index_average_map].bsec      = bsec2;
         vec_VoxRes[1][index_average_map].flags     = 7;
     }
+    */
 
-
-    for(Int_t index_average_map = 0; index_average_map < (Int_t)vec_VoxRes[0].size(); index_average_map++){
+    for(Int_t index_average_map = 0; index_average_map < (Int_t)vec_VoxRes[0].size(); index_average_map++)
+    {
         vec_VoxRes[2][index_average_map].D[0]      = vec_VoxRes[delta_pressed[0]][index_average_map].D[0];
         vec_VoxRes[2][index_average_map].D[1]      = vec_VoxRes[delta_pressed[1]][index_average_map].D[1];
         vec_VoxRes[2][index_average_map].D[2]      = vec_VoxRes[delta_pressed[2]][index_average_map].D[2];
@@ -2056,7 +2092,7 @@ void voxResTree::DoExport()
 
 
 //---------------------------------------------------------------------------------
-void voxResTree::DoNewDataSelection(Int_t i_position)
+void voxResTree::DoNewDataSelection(Int_t i_position)  // changing directory which contains several maps
 //void voxResTree::DoNewDataSelection()
 {
     //Int_t i_select = 0;
@@ -2124,7 +2160,7 @@ void voxResTree::DoNewDataSelection(Int_t i_position)
 void voxResTree::DoNewFileSelection(Int_t i_file)
 {
     fCombo_file[global_position]->Select(i_file);
-    
+
     printf("voxResTree::DoNewFileSelection(%d) \n",global_position);
     //printf("voxResTree::DoNewFileSelection(%d) \n",i_select);
     TString TS_inputpos = "";

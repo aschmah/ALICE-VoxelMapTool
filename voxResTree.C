@@ -9,16 +9,19 @@
 
 void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
 {
-    printf("voxResTree::Loop \n");
+    printf("voxResTree::Loop, file_selected: %d, global_position: %d \n",file_selected,global_position);
+
+    if(CheckBox_sectoraverage[0] ->GetState() == kButtonDown) printf("sector average for file: %d \n",0);
+    if(CheckBox_sectoraverage[1] ->GetState() == kButtonDown) printf("sector average for file: %d \n",1);
 
     Double_t sign_invert[3]      = {1.0,1.0,1.0};
     Int_t    flag_gaussfilter   = 0;
     Int_t    flag_sectoraverage = 0;
-    if(CheckBox_invert_X      ->GetState() == kButtonDown) sign_invert[0]       = -1.0;
-    if(CheckBox_invert_Y      ->GetState() == kButtonDown) sign_invert[1]       = -1.0;
-    if(CheckBox_invert_Z      ->GetState() == kButtonDown) sign_invert[2]       = -1.0;
-    if(CheckBox_gaussfilter   ->GetState() == kButtonDown) flag_gaussfilter     = 1;
-    if(CheckBox_sectoraverage ->GetState() == kButtonDown) flag_sectoraverage   = 1;
+    if(CheckBox_invert_X[file_selected]      ->GetState() == kButtonDown) sign_invert[0]       = -1.0;
+    if(CheckBox_invert_Y[file_selected]      ->GetState() == kButtonDown) sign_invert[1]       = -1.0;
+    if(CheckBox_invert_Z[file_selected]      ->GetState() == kButtonDown) sign_invert[2]       = -1.0;
+    if(CheckBox_gaussfilter[file_selected]   ->GetState() == kButtonDown) flag_gaussfilter     = 1;
+    if(CheckBox_sectoraverage[file_selected] ->GetState() == kButtonDown) flag_sectoraverage   = 1;
     if (fChain == 0) return;
 
     for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
@@ -123,9 +126,9 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     N_bins_Z_GF = TGNum_DeltaZ_GF->GetNumberEntry()->GetNumber();
     sigma_GF    = TGNum_sigma_GF ->GetNumberEntry()->GetNumber();
 
-    scale_XYZ[0] = TGNum_scale_X ->GetNumberEntry()->GetNumber();
-    scale_XYZ[1] = TGNum_scale_Y ->GetNumberEntry()->GetNumber();
-    scale_XYZ[2] = TGNum_scale_Z ->GetNumberEntry()->GetNumber();
+    scale_XYZ[0] = TGNum_scale_X[file_selected] ->GetNumberEntry()->GetNumber();
+    scale_XYZ[1] = TGNum_scale_Y[file_selected] ->GetNumberEntry()->GetNumber();
+    scale_XYZ[2] = TGNum_scale_Z[file_selected] ->GetNumberEntry()->GetNumber();
 
     vector<vector<vector<Double_t>>> vec_GKernel;
     vec_GKernel.resize(N_bins_X_GF*2+1);
@@ -383,37 +386,37 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
         if(index_average_map > 410400) printf("WARNING: index_average_map out of range! \n");
 
         //printf("index_average_map: %d, DXorig: %4.3f \n",index_average_map,DXorig);
-        vec_VoxRes[0][index_average_map].D[0]      = (float)DXorig;
-        vec_VoxRes[0][index_average_map].D[1]      = (float)DYorig;
-        vec_VoxRes[0][index_average_map].D[2]      = (float)DZorig;
+        vec_VoxRes[file_selected][index_average_map].D[0]      = (float)DXorig;
+        vec_VoxRes[file_selected][index_average_map].D[1]      = (float)DYorig;
+        vec_VoxRes[file_selected][index_average_map].D[2]      = (float)DZorig;
 
-        vec_VoxRes[0][index_average_map].DS[0]     = (float)DX;
-        vec_VoxRes[0][index_average_map].DS[1]     = (float)DY;
-        vec_VoxRes[0][index_average_map].DS[2]     = (float)DZ;
+        vec_VoxRes[file_selected][index_average_map].DS[0]     = (float)DX;
+        vec_VoxRes[file_selected][index_average_map].DS[1]     = (float)DY;
+        vec_VoxRes[file_selected][index_average_map].DS[2]     = (float)DZ;
 
-        vec_VoxRes[0][index_average_map].DC[0]     = (float)DX;
-        vec_VoxRes[0][index_average_map].DC[1]     = (float)DY;
-        vec_VoxRes[0][index_average_map].DC[2]     = (float)DZ;
+        vec_VoxRes[file_selected][index_average_map].DC[0]     = (float)DX;
+        vec_VoxRes[file_selected][index_average_map].DC[1]     = (float)DY;
+        vec_VoxRes[file_selected][index_average_map].DC[2]     = (float)DZ;
 
-        vec_VoxRes[0][index_average_map].E[0]      = (float)E[0];
-        vec_VoxRes[0][index_average_map].E[1]      = (float)E[1];
-        vec_VoxRes[0][index_average_map].E[2]      = (float)E[2];
+        vec_VoxRes[file_selected][index_average_map].E[0]      = (float)E[0];
+        vec_VoxRes[file_selected][index_average_map].E[1]      = (float)E[1];
+        vec_VoxRes[file_selected][index_average_map].E[2]      = (float)E[2];
 
-        vec_VoxRes[0][index_average_map].stat[0]   = (float)stat[0];
-        vec_VoxRes[0][index_average_map].stat[1]   = (float)stat[1];
-        vec_VoxRes[0][index_average_map].stat[2]   = (float)stat[2];
-        vec_VoxRes[0][index_average_map].stat[3]   = (float)stat[3]; // number of entries used
+        vec_VoxRes[file_selected][index_average_map].stat[0]   = (float)stat[0];
+        vec_VoxRes[file_selected][index_average_map].stat[1]   = (float)stat[1];
+        vec_VoxRes[file_selected][index_average_map].stat[2]   = (float)stat[2];
+        vec_VoxRes[file_selected][index_average_map].stat[3]   = (float)stat[3]; // number of entries used
 
 
-        vec_VoxRes[0][index_average_map].EXYCorr   = EXYCorr;
-        vec_VoxRes[0][index_average_map].dYSigMAD  = dYSigMAD;
-        vec_VoxRes[0][index_average_map].dZSigLTM  = dZSigLTM;
+        vec_VoxRes[file_selected][index_average_map].EXYCorr   = EXYCorr;
+        vec_VoxRes[file_selected][index_average_map].dYSigMAD  = dYSigMAD;
+        vec_VoxRes[file_selected][index_average_map].dZSigLTM  = dZSigLTM;
 
-        vec_VoxRes[0][index_average_map].bvox[0]   = bvox[0];
-        vec_VoxRes[0][index_average_map].bvox[1]   = bvox[1];
-        vec_VoxRes[0][index_average_map].bvox[2]   = bvox[2];
-        vec_VoxRes[0][index_average_map].bsec      = bsec;
-        vec_VoxRes[0][index_average_map].flags     = 7;
+        vec_VoxRes[file_selected][index_average_map].bvox[0]   = bvox[0];
+        vec_VoxRes[file_selected][index_average_map].bvox[1]   = bvox[1];
+        vec_VoxRes[file_selected][index_average_map].bvox[2]   = bvox[2];
+        vec_VoxRes[file_selected][index_average_map].bsec      = bsec;
+        vec_VoxRes[file_selected][index_average_map].flags     = 7;
         //--------------------------------------------------
 
 
