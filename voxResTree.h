@@ -182,7 +182,9 @@ public :
    ULong_t bcolor, ycolor, gcolor, wcolor;
 
    TGGroupFrame* GRF_lower;
+   TGGroupFrame* GRF_middle;
    TGVerticalFrame*   TGV_lower;
+   TGVerticalFrame*   TGV_middle;
    TGHorizontalFrame* TGH_lowerA;
    TGHorizontalFrame* TGH_lowerAa;
    TGHorizontalFrame* TGH_lowerB;
@@ -191,7 +193,7 @@ public :
    TGMainFrame* Frame_Setup;
    vector<TGHorizontalFrame*> vec_TGH_general;
    vector<TGHorizontalFrame*> vec_TGH_lower_split;
-   TRootEmbeddedCanvas *emb_can_h2D_DY_X_vs_Z, *emb_can_h2D_DY_Y_vs_X;
+   TRootEmbeddedCanvas *emb_can_h2D_DY_X_vs_Z, *emb_can_h2D_DY_Y_vs_X, *emb_can_statusbar;
    TCanvas *can_h2D_DY_X_vs_Z, *can_h2D_DY_Y_vs_X;
    TGGroupFrame *GR_bottom_sliders_sector, *GR_bottom_sliders_phi, *GR_bottom_sliders_zbin, *GR_bottom_range, *GR_Exit, *GR_delta, *GR_bottom_GF, *GR_data_selection_A, *GR_data_selection_B, *GR_data_output, *GR_data_invert, *GR_ratio, *GR_Select;
    TGHorizontalFrame *TGH_slider_sector, *TGH_slider_phi, *TGH_slider_zbin, *TGH_DeltaX_GF, *TGH_DeltaY_GF, *TGH_DeltaZ_GF, *TGH_sigma_GF;
@@ -239,6 +241,8 @@ public :
    Int_t N_bins_X_GF = 3;
    Int_t N_bins_Z_GF = 1;
    Double_t sigma_GF = 1.0;
+   TGVerticalFrame* left_frame;
+   TGVerticalFrame* right_frame;
 
    Float_t scale_XYZ[3] = {1.0,1.0,1.0};
 
@@ -339,7 +343,7 @@ void voxResTree::EventInfo(Int_t event, Int_t px, Int_t py, TObject *selected)
     if (event == kKeyPress)
         sprintf(text2, "%c", (char) px);
     else
-        sprintf(text2, "%d,%d", px, py);
+        sprintf(text2, "pix x,y = %d,%d", px, py);
     SetStatusText(text2,2);
     text3 = selected->GetObjectInfo(px,py);
     SetStatusText(text3,3);
@@ -644,13 +648,15 @@ void voxResTree::Init()
     Frame_Setup = new TGMainFrame(gClient->GetRoot(), 400, 100);
     Frame_Setup ->SetWindowName("Setup");
 
-    vec_TGH_general.resize(2); // top, down
+    vec_TGH_general.resize(3); // top, down
     vec_TGH_lower_split.resize(2); // down split into 2
     vec_TGH_general[0]            = new TGHorizontalFrame(Frame_Setup);
     vec_TGH_general[1]            = new TGHorizontalFrame(Frame_Setup);
+    vec_TGH_general[2]            = new TGHorizontalFrame(Frame_Setup);
     vec_TGH_lower_split[0]        = new TGHorizontalFrame(vec_TGH_general[1]);
     vec_TGH_lower_split[1]        = new TGHorizontalFrame(vec_TGH_general[1]);
     Frame_Setup ->AddFrame(vec_TGH_general[0], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY,5, 5, 5, 5));
+    Frame_Setup ->AddFrame(vec_TGH_general[2], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY,5, 5, 5, 5));
     Frame_Setup ->AddFrame(vec_TGH_general[1], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY,5, 5, 5, 5));
     //vec_TGH_general[1] ->AddFrame(vec_TGH_lower_split[0], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY,5, 5, 5, 5));
     //vec_TGH_general[1] ->AddFrame(vec_TGH_lower_split[1], new TGLayoutHints(kLHintsCenterX | kLHintsCenterY,5, 5, 5, 5));
@@ -668,10 +674,38 @@ void voxResTree::Init()
     vec_TGH_general[1] ->AddFrame(GRF_lower, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY,5, 5, 5, 5));
 
 
-    emb_can_h2D_DY_X_vs_Z = new TRootEmbeddedCanvas("emb_can_h2D_DY_X_vs_Z",vec_TGH_general[0],200,400);
+    emb_can_h2D_DY_X_vs_Z = new TRootEmbeddedCanvas("emb_can_h2D_DY_X_vs_Z",vec_TGH_general[0],200,400); 
+
+    printf("Building status bar\n");
+    // status bar
+    Int_t parts[] = {15, 15, 10, 45};
+    fStatusBar = new TGStatusBar(vec_TGH_general[0], 50, 10, kVerticalFrame); //[0]
+    fStatusBar->SetParts(parts, 4);
+    fStatusBar->Draw3DCorner(kFALSE);
+    emb_can_h2D_DY_X_vs_Z->AddFrame(fStatusBar, new TGLayoutHints(kLHintsExpandX, 0, 0, 10, 0)); 
+    //-------------------
+
+    // printf("Status bar buid\n");
+    // emb_can_statusbar   = new TRootEmbeddedCanvas("emb_can_statusbar",vec_TGH_general[2],400,30); 
+    // // GRF_middle          = new TGGroupFrame(vec_TGH_general[2],"Status bar",kHorizontalFrame);
+    // // TGV_middle          = new TGVerticalFrame(GRF_middle);
+    // // TGV_middle          ->AddFrame(fStatusBar, new TGLayoutHints(kLHintsExpandX, 0, 0, 10, 0));
+    // // GRF_middle          ->AddFrame(TGV_middle, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    // // vec_TGH_general[2]  ->AddFrame(GRF_middle, new TGLayoutHints(kLHintsCenterX | kLHintsCenterY,5, 5, 5, 5));
+    // vec_TGH_general[2] ->AddFrame(emb_can_statusbar, new TGLayoutHints( kLHintsExpandX | kLHintsExpandY, 10, 10, 4, 4));
+    // emb_can_statusbar->AddFrame(fStatusBar, new TGLayoutHints(kLHintsExpandX, 0, 0, 10, 0)); 
+    // // emb_can_statusbar->AddFrame(fStatusBar, new TGLayoutHints(kLHintsBottom | kLHintsLeft | kLHintsExpandX, 0, 0, 2, 0));
+
+
+    Int_t wid_left = emb_can_h2D_DY_X_vs_Z->GetCanvasWindowId();
+    TCanvas *myc_left = new TCanvas("MyCanvas_left", 10,10,wid_left);
+    emb_can_h2D_DY_X_vs_Z->AdoptCanvas(myc_left);
+    myc_left->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)","voxResTree",this,"EventInfo(Int_t,Int_t,Int_t,TObject*)");
+
+
+    // emb_can_h2D_DY_X_vs_Z = new TRootEmbeddedCanvas("emb_can_h2D_DY_X_vs_Z",left_frame,200,400);
     can_h2D_DY_X_vs_Z = emb_can_h2D_DY_X_vs_Z->GetCanvas();
     can_h2D_DY_X_vs_Z->cd();
-
     can_h2D_DY_X_vs_Z ->SetFillColor(10);
     can_h2D_DY_X_vs_Z ->SetTopMargin(0.04);
     can_h2D_DY_X_vs_Z ->SetBottomMargin(0.18);
@@ -681,10 +715,10 @@ void voxResTree::Init()
     can_h2D_DY_X_vs_Z ->SetGrid(0,0);
 
     emb_can_h2D_DY_Y_vs_X = new TRootEmbeddedCanvas("emb_can_h2D_DY_Y_vs_X",vec_TGH_general[0],200,400);
-    //Int_t wid = emb_can_h2D_DY_Y_vs_X->GetCanvasWindowId();
-    //TCanvas *myc = new TCanvas("MyCanvas", 10,10,wid);
-    //emb_can_h2D_DY_Y_vs_X->AdoptCanvas(myc);
-    //myc->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)","MyMainFrame",this,"EventInfo(Int_t,Int_t,Int_t,TObject*)");
+    Int_t wid = emb_can_h2D_DY_Y_vs_X->GetCanvasWindowId();
+    TCanvas *myc = new TCanvas("MyCanvas", 10,10,wid);
+    emb_can_h2D_DY_Y_vs_X->AdoptCanvas(myc);
+    myc->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)","voxResTree",this,"EventInfo(Int_t,Int_t,Int_t,TObject*)");
 
     can_h2D_DY_Y_vs_X = emb_can_h2D_DY_Y_vs_X->GetCanvas();
     can_h2D_DY_Y_vs_X->cd();
@@ -735,17 +769,13 @@ void voxResTree::Init()
     //-------------------
 
 
-    //-------------------
+    // //-------------------
     vec_TGH_general[0] ->AddFrame(emb_can_h2D_DY_X_vs_Z, new TGLayoutHints( kLHintsExpandX | kLHintsExpandY, 10, 10, 4, 4));
     vec_TGH_general[0] ->AddFrame(emb_can_h2D_DY_Y_vs_X, new TGLayoutHints( kLHintsExpandX | kLHintsExpandY, 10, 10, 4, 4));
 
-    // status bar
-    //Int_t parts[] = {45, 15, 10, 30};
-    //fStatusBar = new TGStatusBar(vec_TGH_general[0], 50, 10, kVerticalFrame);
-    //fStatusBar->SetParts(parts, 4);
-    //fStatusBar->Draw3DCorner(kFALSE);
-    //vec_TGH_general[0] ->AddFrame(fStatusBar, new TGLayoutHints(kLHintsExpandX, 0, 0, 10, 0));
-    //-------------------
+    
+    // vec_TGH_general[0] ->AddFrame(left_frame, new TGLayoutHints( kLHintsExpandX | kLHintsExpandY, 10, 10, 4, 4));
+    // vec_TGH_general[0] ->AddFrame(right_frame, new TGLayoutHints( kLHintsExpandX | kLHintsExpandY, 10, 10, 4, 4));
 
 
 
@@ -1164,6 +1194,8 @@ void voxResTree::Init()
 
     vec_TGH_general[0] ->Resize(1600,550);
     vec_TGH_general[1] ->Resize(20,20);
+    // vec_TGH_general[2] ->Resize(20,20);
+
 
     //vec_TGH_lower_split[0] ->Resize(1450,550);
 
