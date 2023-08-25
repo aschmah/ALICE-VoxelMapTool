@@ -17,11 +17,13 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     Double_t sign_invert[3]      = {1.0,1.0,1.0};
     Int_t    flag_gaussfilter   = 0;
     Int_t    flag_sectoraverage = 0;
+    Int_t flag_low_radii_extrapolation = 0;
     if(CheckBox_invert_X[file_selected]      ->GetState() == kButtonDown) sign_invert[0]       = -1.0;
     if(CheckBox_invert_Y[file_selected]      ->GetState() == kButtonDown) sign_invert[1]       = -1.0;
     if(CheckBox_invert_Z[file_selected]      ->GetState() == kButtonDown) sign_invert[2]       = -1.0;
     if(CheckBox_gaussfilter[file_selected]   ->GetState() == kButtonDown) flag_gaussfilter     = 1;
     if(CheckBox_sectoraverage[file_selected] ->GetState() == kButtonDown) flag_sectoraverage   = 1;
+    if(CheckBox_low_radii_extrapolation      ->GetState() == kButtonDown) flag_low_radii_extrapolation = 1;
     if (fChain == 0) return;
 
     for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
@@ -35,12 +37,37 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     TP_DY_vs_R        ->Reset();
     h2D_DZ_vs_Z_trunc ->Reset();
     h2D_DX_vs_sector  ->Reset();
+    TP_DX_vs_sector[file_selected]->Reset();
+    TP_DY_vs_sector[file_selected]->Reset();
+    TP_DX_vs_sector[file_selected+2]->Reset();
+    TP_DY_vs_sector[file_selected+2]->Reset();
+    for(Int_t i_hist = 0; i_hist < 20; i_hist++)
+    {
+        TP_DX_vs_sector_AC[file_selected][i_hist] ->Reset();
+        TP_DY_vs_sector_AC[file_selected][i_hist] ->Reset();
+    }
     h2D_DY_vs_sector  ->Reset();
     h2D_DZ_vs_sector  ->Reset();
     h2D_DY_vs_DX      ->Reset();
     h2D_DZ_vs_DX      ->Reset();
     h2D_DX_vs_stat    ->Reset();
-    h2D_DXS_vs_radius ->Reset();
+    for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+    {
+        h2D_DXYZS_vs_radius[i_xyz] ->Reset();
+        TP_DXYZS_vs_radius[i_xyz]  ->Reset();
+    }
+
+    for(Int_t i_yz = 0; i_yz < 15; i_yz++)  // y over z bin
+    {
+        for(Int_t i_AC = 0; i_AC < 2; i_AC++)
+        {
+            for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+            {
+                TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->Reset();
+            }
+        }
+    }
+
     h2D_DX_vs_radius  ->Reset();        //NEW
     h2D_DY_vs_stat    ->Reset();
     //TP_DZ_vs_Z_trunc  ->Reset();
@@ -130,6 +157,10 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     scale_XYZ[1] = TGNum_scale_Y[file_selected] ->GetNumberEntry()->GetNumber();
     scale_XYZ[2] = TGNum_scale_Z[file_selected] ->GetNumberEntry()->GetNumber();
 
+    offset_XYZ[0] = TGNum_scale_X[file_selected+2] ->GetNumberEntry()->GetNumber();
+    offset_XYZ[1] = TGNum_scale_Y[file_selected+2] ->GetNumberEntry()->GetNumber();
+    offset_XYZ[2] = TGNum_scale_Z[file_selected+2] ->GetNumberEntry()->GetNumber();
+
     vector<vector<vector<Double_t>>> vec_GKernel;
     vec_GKernel.resize(N_bins_X_GF*2+1);
     for(Int_t i_X = 0; i_X < (Int_t)vec_GKernel.size(); i_X++)
@@ -215,8 +246,11 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
                             Double_t weight_sum    = 0.0;
                             for(Int_t i_sector = (0+i_AC*18); i_sector < (18+i_AC*18); i_sector++)
                             {
-                                weight_sum    += 1.0;
-                                average_value += vec_DXYZ_sec_vox[i_xyz][i_sector][voxX][voxY][voxZ];
+                                if(CheckBox_sectors_used[i_sector] ->GetState() == kButtonDown)
+                                {
+                                    weight_sum    += 1.0;
+                                    average_value += vec_DXYZ_sec_vox[i_xyz][i_sector][voxX][voxY][voxZ];
+                                }
                             }
                             for(Int_t i_sector = (0+i_AC*18); i_sector < (18+i_AC*18); i_sector++)
                             {
@@ -339,16 +373,19 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
 
         Int_t sector = (Int_t)bsec;
         Int_t i_z = 1;
+        Int_t AC_side = 0;
         Float_t sign_z = 1.0;
         if(sector >= 18)
         {
             sign_z = -1.0;
             i_z    = 0;
+            AC_side = 1;
+
         }
 
         for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
         {
-            D[i_xyz] *= scale_XYZ[i_xyz]*sign_invert[i_xyz];
+            D[i_xyz] *= scale_XYZ[i_xyz]*sign_invert[i_xyz] + offset_XYZ[i_xyz];
         }
 
         Float_t DXorig = D[0];
@@ -359,7 +396,7 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
         {
             for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
             {
-                D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_sec_vox[i_xyz][sector][bvox_X][bvox_F][bvox_Z];
+                D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_sec_vox[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
             }
         }
 
@@ -367,7 +404,37 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
         {
             for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
             {
-                D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_sec_vox_GF[i_xyz][sector][bvox_X][bvox_F][bvox_Z];
+                D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_sec_vox_GF[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+            }
+        }
+
+        if(flag_low_radii_extrapolation)
+        {
+            printf("flag_low_radii_extrapolation: %d \n",flag_low_radii_extrapolation);
+            Int_t flag_do_extrapolation = 0;
+            Float_t x_val_ext = sign_z*stat[2];
+            if(!AC_side) // A side
+            {
+                if(x_val_ext < TGNum_fit_min_A->GetNumberEntry()->GetNumber())
+                {
+                    flag_do_extrapolation = 1;
+                }
+            }
+            else // C side
+            {
+                if(x_val_ext > TGNum_fit_max_C->GetNumberEntry()->GetNumber())
+                {
+                    flag_do_extrapolation = 1;
+                }
+            }
+
+            if(flag_do_extrapolation)
+            {
+                for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+                {
+                    //D[i_xyz] = func_PolyFitFunc_xyz_AC[i_xyz][AC_side] ->Eval(x_val_ext);
+                    D[i_xyz] = func_PolyFitFunc_xyz_Y_AC[bvox_F][AC_side][i_xyz] ->Eval(x_val_ext);
+                }
             }
         }
 
@@ -597,8 +664,16 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
             h2D_DY_vs_stat ->Fill(stat[3],D[1]);
         }
 
-        h2D_DXS_vs_radius ->Fill(sign_z*stat[2],DSX);
-        h2D_DX_vs_radius ->Fill(sign_z*stat[2],DX);
+        //h2D_DXS_vs_radius ->Fill(sign_z*stat[2],DSX);
+        for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+        {
+            h2D_DXYZS_vs_radius[i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
+            TP_DXYZS_vs_radius[i_xyz]  ->Fill(sign_z*stat[2],D[i_xyz]);
+            TP_DXYZS_vs_radius_Y_AC[bvox_F][AC_side][i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
+        }
+
+
+        h2D_DX_vs_radius  ->Fill(sign_z*stat[2],DX);
 
 
         if(bvox[0] == 0 && stat[3] > 0)
@@ -615,6 +690,20 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
             x_bin = h2D_DZ_vs_sector->GetXaxis()->FindBin(bsec+((Double_t)bvox[1])/15.0);
             y_bin = h2D_DZ_vs_sector->GetYaxis()->FindBin(D[2]);
             h2D_DZ_vs_sector ->SetBinContent(x_bin,y_bin,stat[2]);
+        }
+
+        if(bvox[0] == 0 && stat[3] > 0)
+        {
+            if(bvox[2] >= 130 && bvox[2] <= 134)
+            {
+                TP_DX_vs_sector[file_selected] ->Fill(bsec+((Double_t)bvox[1])/15.0,D[0]);
+                TP_DY_vs_sector[file_selected] ->Fill(bsec+((Double_t)bvox[1])/15.0,D[1]);
+            }
+            if(bvox[2] >= 30 && bvox[2] <= 34)
+            {
+                TP_DX_vs_sector[file_selected+2] ->Fill(bsec+((Double_t)bvox[1])/15.0,D[0]);
+                TP_DY_vs_sector[file_selected+2] ->Fill(bsec+((Double_t)bvox[1])/15.0,D[1]);
+            }
         }
 
         //if(sector == 21 && stat[2] > 200.0)
@@ -730,7 +819,88 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     h2D_DX_vs_sector ->GetZaxis()->SetTitle("radius (cm)");
     h2D_DX_vs_sector ->GetYaxis()->SetRangeUser(-4.5,4.5);
     h2D_DX_vs_sector ->DrawCopy("colz");
+
+    func_modulation ->SetParameter(0,1.0);
+    func_modulation ->SetParameter(1,TMath::Pi()*2.0/9.0);
+    func_modulation ->SetParameter(2,-(TMath::Pi()/2.0) - 0.9);
+    func_modulation ->SetParameter(3,-0.35);
+    func_modulation ->SetLineColor(kAzure-2);
+    func_modulation ->SetLineWidth(4);
+    func_modulation ->SetLineStyle(1);
+    func_modulation ->DrawCopy("same");
+
     can_h2D_DX_vs_sector ->Update();
+    //------------------------------------------------------------------------
+
+
+
+    //------------------------------------------------------------------------
+    can_TP_DX_vs_sector->cd(1);
+    TP_DX_vs_sector[0] ->GetXaxis()->CenterTitle();
+    TP_DX_vs_sector[0] ->GetYaxis()->CenterTitle();
+    TP_DX_vs_sector[0] ->SetStats(0);
+    TP_DX_vs_sector[0] ->SetTitle("");
+    TP_DX_vs_sector[0] ->GetXaxis()->SetTitleOffset(1.3);
+    TP_DX_vs_sector[0] ->GetYaxis()->SetTitleOffset(0.3);
+    TP_DX_vs_sector[0] ->GetXaxis()->SetLabelSize(0.06);
+    TP_DX_vs_sector[0] ->GetYaxis()->SetLabelSize(0.06);
+    TP_DX_vs_sector[0] ->GetXaxis()->SetTitleSize(0.06);
+    TP_DX_vs_sector[0] ->GetYaxis()->SetTitleSize(0.06);
+    TP_DX_vs_sector[0] ->GetXaxis()->SetNdivisions(505,'N');
+    TP_DX_vs_sector[0] ->GetYaxis()->SetNdivisions(505,'N');
+    TP_DX_vs_sector[0] ->GetXaxis()->SetTitle("sector");
+    TP_DX_vs_sector[0] ->GetYaxis()->SetTitle("#DeltaX (cm)");
+    TP_DX_vs_sector[0] ->GetYaxis()->SetRangeUser(-1.8,1.8);
+    TP_DX_vs_sector[0] ->SetLineColor(kBlack);
+    TP_DX_vs_sector[0] ->DrawCopy("hist");
+    TP_DX_vs_sector[1] ->SetLineColor(kRed);
+    TP_DX_vs_sector[1] ->DrawCopy("same hist");
+
+    TP_DX_vs_sector[2] ->SetLineColor(kGray+1);
+    TP_DX_vs_sector[2] ->DrawCopy("same hist");
+    TP_DX_vs_sector[3] ->SetLineColor(kRed+2);
+    TP_DX_vs_sector[3] ->DrawCopy("same hist");
+
+    for(Int_t i_sector = 0; i_sector < 36; i_sector++)
+    {
+        PlotLine(0.0 + i_sector,0.0 + i_sector,-1.5,1.5,kGray+2,1,3); // Double_t x1_val, Double_t x2_val, Double_t y1_val, Double_t y2_val, Int_t Line_Col, Int_t LineWidth, Int_t LineStyle
+    }
+
+
+    can_TP_DX_vs_sector->cd(2);
+    TP_DY_vs_sector[0] ->GetXaxis()->CenterTitle();
+    TP_DY_vs_sector[0] ->GetYaxis()->CenterTitle();
+    TP_DY_vs_sector[0] ->SetStats(0);
+    TP_DY_vs_sector[0] ->SetTitle("");
+    TP_DY_vs_sector[0] ->GetXaxis()->SetTitleOffset(1.3);
+    TP_DY_vs_sector[0] ->GetYaxis()->SetTitleOffset(0.3);
+    TP_DY_vs_sector[0] ->GetXaxis()->SetLabelSize(0.06);
+    TP_DY_vs_sector[0] ->GetYaxis()->SetLabelSize(0.06);
+    TP_DY_vs_sector[0] ->GetXaxis()->SetTitleSize(0.06);
+    TP_DY_vs_sector[0] ->GetYaxis()->SetTitleSize(0.06);
+    TP_DY_vs_sector[0] ->GetXaxis()->SetNdivisions(505,'N');
+    TP_DY_vs_sector[0] ->GetYaxis()->SetNdivisions(505,'N');
+    TP_DY_vs_sector[0] ->GetXaxis()->SetTitle("sector");
+    TP_DY_vs_sector[0] ->GetYaxis()->SetTitle("#DeltaY (cm)");
+    TP_DY_vs_sector[0] ->GetYaxis()->SetRangeUser(-1.8,1.8);
+    TP_DY_vs_sector[0] ->SetLineColor(kBlack);
+    TP_DY_vs_sector[0] ->DrawCopy("hist");
+    TP_DY_vs_sector[1] ->SetLineColor(kRed);
+    TP_DY_vs_sector[1] ->DrawCopy("same hist");
+
+    // small radii
+    TP_DY_vs_sector[2] ->SetLineColor(kGray+1);
+    TP_DY_vs_sector[2] ->DrawCopy("same hist");
+    TP_DY_vs_sector[3] ->SetLineColor(kRed+2);
+    TP_DY_vs_sector[3] ->DrawCopy("same hist");
+
+    for(Int_t i_sector = 0; i_sector < 36; i_sector++)
+    {
+        PlotLine(0.0 + i_sector,0.0 + i_sector,-1.5,1.5,kGray+2,1,3); // Double_t x1_val, Double_t x2_val, Double_t y1_val, Double_t y2_val, Int_t Line_Col, Int_t LineWidth, Int_t LineStyle
+    }
+
+    can_TP_DX_vs_sector->cd(1) ->Update();
+    can_TP_DX_vs_sector->cd(2) ->Update();
     //------------------------------------------------------------------------
 
 
@@ -763,6 +933,16 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     h2D_DY_vs_sector ->GetZaxis()->SetTitle("radius (cm)");
     h2D_DY_vs_sector ->GetYaxis()->SetRangeUser(-2.5,2.5);
     h2D_DY_vs_sector ->DrawCopy("colz");
+
+    func_modulation ->SetParameter(0,0.5);
+    func_modulation ->SetParameter(1,TMath::Pi()*2.0/9.0);
+    func_modulation ->SetParameter(2,-(TMath::Pi()/2.0) - 0.9);
+    func_modulation ->SetParameter(3,-0.72);
+    func_modulation ->SetLineColor(kAzure-2);
+    func_modulation ->SetLineWidth(4);
+    func_modulation ->SetLineStyle(1);
+    func_modulation ->DrawCopy("same");
+
     can_h2D_DY_vs_sector ->Update();
     //------------------------------------------------------------------------
 
@@ -900,37 +1080,6 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
 
 
 
-    //------------------------------------------------------------------------
-    can_h2D_DXS_vs_radius ->cd();
-    can_h2D_DXS_vs_radius ->cd()->SetFillColor(10);
-    can_h2D_DXS_vs_radius ->cd()->SetTopMargin(0.1);
-    can_h2D_DXS_vs_radius ->cd()->SetBottomMargin(0.2);
-    can_h2D_DXS_vs_radius ->cd()->SetRightMargin(0.15);
-    can_h2D_DXS_vs_radius ->cd()->SetLeftMargin(0.2);
-    can_h2D_DXS_vs_radius ->cd()->SetTicks(1,1);
-    can_h2D_DXS_vs_radius ->cd()->SetGrid(0,0);
-    can_h2D_DXS_vs_radius ->cd();
-    can_h2D_DXS_vs_radius ->cd()->SetLogz(1);
-    h2D_DXS_vs_radius ->GetXaxis()->CenterTitle();
-    h2D_DXS_vs_radius ->GetYaxis()->CenterTitle();
-    h2D_DXS_vs_radius ->SetStats(0);
-    h2D_DXS_vs_radius ->SetTitle("");
-    h2D_DXS_vs_radius ->GetXaxis()->SetTitleOffset(1.2);
-    h2D_DXS_vs_radius ->GetYaxis()->SetTitleOffset(1.3);
-    h2D_DXS_vs_radius ->GetXaxis()->SetLabelSize(0.06);
-    h2D_DXS_vs_radius ->GetYaxis()->SetLabelSize(0.06);
-    h2D_DXS_vs_radius ->GetXaxis()->SetTitleSize(0.06);
-    h2D_DXS_vs_radius ->GetYaxis()->SetTitleSize(0.06);
-    h2D_DXS_vs_radius ->GetXaxis()->SetNdivisions(505,'N');
-    h2D_DXS_vs_radius ->GetYaxis()->SetNdivisions(505,'N');
-    h2D_DXS_vs_radius ->GetXaxis()->SetTitle("radius (cm)");
-    h2D_DXS_vs_radius ->GetYaxis()->SetTitle("#DeltaX (cm)");
-    h2D_DXS_vs_radius ->GetZaxis()->SetTitle("entries");
-    //h2D_DXS_vs_radius ->GetYaxis()->SetRangeUser(-4.5,4.5);
-    h2D_DXS_vs_radius ->DrawCopy("colz");
-    can_h2D_DXS_vs_radius ->Update();
-    //------------------------------------------------------------------------
-
 
     //------------------------------------------------------------------------
     can_h2D_DY_vs_stat ->cd();
@@ -964,6 +1113,7 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     //------------------------------------------------------------------------
 
 
+#if 0
     // -----------------------------------------------------------------------
     //                    X-Residuals (DX) vs Radius (R)
     //------------------------------------------------------------------------
@@ -995,9 +1145,10 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     TP_DX_vs_R ->DrawCopy("hist");
     can_TP_DX_vs_R ->Update();
     //------------------------------------------------------------------------
+#endif
 
 
-
+#if 0
     //------------------------------------------------------------------------
     can_TP_DY_vs_R ->cd();
     can_TP_DY_vs_R ->cd()->SetFillColor(10);
@@ -1027,7 +1178,10 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     TP_DY_vs_R ->DrawCopy("hist");
     can_TP_DY_vs_R ->Update();
     //------------------------------------------------------------------------
+#endif
 
+
+#if 0
     // -----------------------------------------------------------------------
     can_h2D_and_h1D_DX_vs_radius ->Divide(1,2);
     can_h2D_and_h1D_DX_vs_radius ->cd(1);
@@ -1071,7 +1225,7 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     TP_DX_vs_R ->DrawCopy("hist");
     can_h2D_and_h1D_DX_vs_radius ->Update();
     //------------------------------------------------------------------------
- 
+#endif
 
 
     //------------------------------------------------------------------------
