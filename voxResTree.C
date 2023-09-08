@@ -13,17 +13,21 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
 
     if(CheckBox_sectoraverage[0] ->GetState() == kButtonDown) printf("sector average for file: %d \n",0);
     if(CheckBox_sectoraverage[1] ->GetState() == kButtonDown) printf("sector average for file: %d \n",1);
+    if(CheckBox_sectoraverage[2] ->GetState() == kButtonDown) printf("sector recovery for file: %d \n",0);
+    if(CheckBox_sectoraverage[3] ->GetState() == kButtonDown) printf("sector recovery for file: %d \n",1);
 
-    Double_t sign_invert[3]      = {1.0,1.0,1.0};
-    Int_t    flag_gaussfilter   = 0;
-    Int_t    flag_sectoraverage = 0;
+    Double_t sign_invert[3]       = {1.0,1.0,1.0};
+    Int_t    flag_gaussfilter     = 0;
+    Int_t    flag_sectoraverage   = 0;
+    Int_t    flag_sector_recovery = 0;
     Int_t flag_low_radii_extrapolation = 0;
-    if(CheckBox_invert_X[file_selected]      ->GetState() == kButtonDown) sign_invert[0]       = -1.0;
-    if(CheckBox_invert_Y[file_selected]      ->GetState() == kButtonDown) sign_invert[1]       = -1.0;
-    if(CheckBox_invert_Z[file_selected]      ->GetState() == kButtonDown) sign_invert[2]       = -1.0;
-    if(CheckBox_gaussfilter[file_selected]   ->GetState() == kButtonDown) flag_gaussfilter     = 1;
-    if(CheckBox_sectoraverage[file_selected] ->GetState() == kButtonDown) flag_sectoraverage   = 1;
-    if(CheckBox_low_radii_extrapolation      ->GetState() == kButtonDown) flag_low_radii_extrapolation = 1;
+    if(CheckBox_invert_X[file_selected]        ->GetState() == kButtonDown) sign_invert[0]       = -1.0;
+    if(CheckBox_invert_Y[file_selected]        ->GetState() == kButtonDown) sign_invert[1]       = -1.0;
+    if(CheckBox_invert_Z[file_selected]        ->GetState() == kButtonDown) sign_invert[2]       = -1.0;
+    if(CheckBox_gaussfilter[file_selected]     ->GetState() == kButtonDown) flag_gaussfilter     = 1;
+    if(CheckBox_sectoraverage[file_selected]   ->GetState() == kButtonDown) flag_sectoraverage   = 1;
+    if(CheckBox_sectoraverage[file_selected+2] ->GetState() == kButtonDown) flag_sector_recovery = 1;
+    if(CheckBox_low_radii_extrapolation        ->GetState() == kButtonDown) flag_low_radii_extrapolation = 1;
     if (fChain == 0) return;
 
     for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
@@ -64,9 +68,19 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
             for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
             {
                 TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->Reset();
+                for(Int_t i_sector = 0; i_sector < 18; i_sector++)
+                {
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->Reset();
+
+                    for(Int_t i_z = 0; i_z < 5; i_z++)
+                    {
+                        TP_DXYZS_vs_radius_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->Reset();
+                    }
+                }
             }
         }
     }
+
 
     h2D_DX_vs_radius  ->Reset();        //NEW
     h2D_DY_vs_stat    ->Reset();
@@ -121,31 +135,53 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     Long64_t N_entries_loop = N_events_loop;
     if(N_events_loop == -1 || N_events_loop > nentries) N_entries_loop = nentries;
 
-    Float_t vec_DXYZ_sec_vox[3][36][152][15][5]    = {0.0};
-    //Float_t vec_DXYZ_sec_vox_GF[3][36][152][15][5] = {0.0}; // after Gaussian filter
-    vector<vector<vector<vector<vector<Float_t>>>>> vec_DXYZ_sec_vox_GF;
-    vec_DXYZ_sec_vox_GF.resize(3);
+    //Float_t vec_DXYZ_vox[3][36][152][15][5]        = {0.0};
+    //Float_t vec_DXYZ_vox_sec[3][36][152][15][5]    = {0.0};
+    //Float_t vec_DXYZ_vox_sec_GF[3][36][152][15][5] = {0.0}; // after Gaussian filter
+    vector<vector<vector<vector<vector<Float_t>>>>> vec_DXYZ_vox;
+    vector<vector<vector<vector<vector<Float_t>>>>> vec_DXYZ_vox_sec;
+    vector<vector<vector<vector<vector<Float_t>>>>> vec_DXYZ_vox_GF;
+    vector<vector<vector<vector<vector<Float_t>>>>> vec_DXYZ_vox_sec_GF;
+    vec_DXYZ_vox.resize(3);
+    vec_DXYZ_vox_sec.resize(3);
+    vec_DXYZ_vox_GF.resize(3);
+    vec_DXYZ_vox_sec_GF.resize(3);
     for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
     {
-        vec_DXYZ_sec_vox_GF[i_xyz].resize(36);
+        vec_DXYZ_vox[i_xyz].resize(36);
+        vec_DXYZ_vox_sec[i_xyz].resize(36);
+        vec_DXYZ_vox_GF[i_xyz].resize(36);
+        vec_DXYZ_vox_sec_GF[i_xyz].resize(36);
         for(Int_t i_sector = 0; i_sector < 36; i_sector++)
         {
-            vec_DXYZ_sec_vox_GF[i_xyz][i_sector].resize(152);
+            vec_DXYZ_vox[i_xyz][i_sector].resize(152);
+            vec_DXYZ_vox_sec[i_xyz][i_sector].resize(152);
+            vec_DXYZ_vox_GF[i_xyz][i_sector].resize(152);
+            vec_DXYZ_vox_sec_GF[i_xyz][i_sector].resize(152);
             for(Int_t voxX = 0; voxX < 152; voxX++)
             {
-                vec_DXYZ_sec_vox_GF[i_xyz][i_sector][voxX].resize(15);
+                vec_DXYZ_vox[i_xyz][i_sector][voxX].resize(15);
+                vec_DXYZ_vox_sec[i_xyz][i_sector][voxX].resize(15);
+                vec_DXYZ_vox_GF[i_xyz][i_sector][voxX].resize(15);
+                vec_DXYZ_vox_sec_GF[i_xyz][i_sector][voxX].resize(15);
                 for(Int_t voxY = 0; voxY < 15; voxY++)
                 {
-                    vec_DXYZ_sec_vox_GF[i_xyz][i_sector][voxX][voxY].resize(5);
+                    vec_DXYZ_vox[i_xyz][i_sector][voxX][voxY].resize(5);
+                    vec_DXYZ_vox_sec[i_xyz][i_sector][voxX][voxY].resize(5);
+                    vec_DXYZ_vox_GF[i_xyz][i_sector][voxX][voxY].resize(5);
+                    vec_DXYZ_vox_sec_GF[i_xyz][i_sector][voxX][voxY].resize(5);
                     for(Int_t voxZ = 0; voxZ < 5; voxZ++)
                     {
-                        vec_DXYZ_sec_vox_GF[i_xyz][i_sector][voxX][voxY][voxZ] = 0.0;
+                        vec_DXYZ_vox[i_xyz][i_sector][voxX][voxY][voxZ] = 0.0;
+                        vec_DXYZ_vox_sec[i_xyz][i_sector][voxX][voxY][voxZ] = 0.0;
+                        vec_DXYZ_vox_GF[i_xyz][i_sector][voxX][voxY][voxZ] = 0.0;
+                        vec_DXYZ_vox_sec_GF[i_xyz][i_sector][voxX][voxY][voxZ] = 0.0;
                     }
                 }
             }
         }
     }
-    //printf("value: %4.3f \n",vec_DXYZ_sec_vox_GF[0][0][0][0][0]);
+    //printf("value: %4.3f \n",vec_DXYZ_vox_GF[0][0][0][0][0]);
 
 
     N_bins_X_GF = TGNum_DeltaX_GF->GetNumberEntry()->GetNumber();
@@ -175,6 +211,7 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     //FilterCreation(GKernel);
     vec_FilterCreation(vec_GKernel,N_bins_X_GF,N_bins_Y_GF,N_bins_Z_GF,sigma_GF);
 
+
 #if 0
     for(Int_t i_X = 0; i_X < (Int_t)vec_GKernel.size(); i_X++)
     {
@@ -193,43 +230,48 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
 
     //------------------------------------------------------------------
     // Gaussian filtering
-    if(flag_gaussfilter || flag_sectoraverage)
+    if(flag_gaussfilter || flag_sectoraverage || flag_sector_recovery)
     {
-    printf("\n-- Gaus or Sectoraverage --\n");
-    for(Long64_t jentry = 0; jentry < N_entries_loop; jentry++)
-    {
-        Long64_t ientry = LoadTree(jentry);
-        if (ientry < 0) break;
-        nb = fChain->GetEntry(jentry);   nbytes += nb;
-
-        Int_t bvox_Z = (Int_t)bvox[0];  // Z/X index 0..4
-        Int_t bvox_F = (Int_t)bvox[1];  // Y/X index 0..14
-        Int_t bvox_X = (Int_t)bvox[2];  // X index   0..151
-
-        Float_t DX = D[0];
-        Float_t DY = D[1];
-        Float_t DZ = D[2];
-
-        Float_t DSX = DS[0];
-        Float_t DSY = DS[1];
-        Float_t DSZ = DS[2];
-
-        Int_t sector = (Int_t)bsec;
-        Int_t i_z = 1;
-        Float_t sign_z = 1.0;
-        if(sector >= 18)
+        printf("\n-- Gaus or Sectoraverage/recovery --\n");
+        for(Long64_t jentry = 0; jentry < N_entries_loop; jentry++)
         {
-            sign_z = -1.0;
-            i_z    = 0;
-        }
+            Long64_t ientry = LoadTree(jentry);
+            if (ientry < 0) break;
+            nb = fChain->GetEntry(jentry);   nbytes += nb;
 
-            vec_DXYZ_sec_vox[0][sector][bvox_X][bvox_F][bvox_Z] = DX;
-            vec_DXYZ_sec_vox[1][sector][bvox_X][bvox_F][bvox_Z] = DY;
-            vec_DXYZ_sec_vox[2][sector][bvox_X][bvox_F][bvox_Z] = DZ;
+            Int_t bvox_Z = (Int_t)bvox[0];  // Z/X index 0..4
+            Int_t bvox_F = (Int_t)bvox[1];  // Y/X index 0..14
+            Int_t bvox_X = (Int_t)bvox[2];  // X index   0..151
+
+            Float_t DX = D[0];
+            Float_t DY = D[1];
+            Float_t DZ = D[2];
+
+            Float_t DSX = DS[0];
+            Float_t DSY = DS[1];
+            Float_t DSZ = DS[2];
+
+            Int_t sector = (Int_t)bsec;
+            Int_t i_z = 1;
+            Float_t sign_z = 1.0;
+            if(sector >= 18)
+            {
+                sign_z = -1.0;
+                i_z    = 0;
+            }
+
+            vec_DXYZ_vox_sec[0][sector][bvox_X][bvox_F][bvox_Z] = DX;
+            vec_DXYZ_vox_sec[1][sector][bvox_X][bvox_F][bvox_Z] = DY;
+            vec_DXYZ_vox_sec[2][sector][bvox_X][bvox_F][bvox_Z] = DZ;
+
+            vec_DXYZ_vox[0][sector][bvox_X][bvox_F][bvox_Z] = DX;
+            vec_DXYZ_vox[1][sector][bvox_X][bvox_F][bvox_Z] = DY;
+            vec_DXYZ_vox[2][sector][bvox_X][bvox_F][bvox_Z] = DZ;
         }
     }
 
-    if(flag_sectoraverage)
+
+    if(flag_sectoraverage || flag_sector_recovery)
     {
         printf("\n-- Sectoraverage -- \n");
         for(Int_t voxX = 0; voxX < 152; voxX++)
@@ -249,12 +291,12 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
                                 if(CheckBox_sectors_used[i_sector] ->GetState() == kButtonDown)
                                 {
                                     weight_sum    += 1.0;
-                                    average_value += vec_DXYZ_sec_vox[i_xyz][i_sector][voxX][voxY][voxZ];
+                                    average_value += vec_DXYZ_vox_sec[i_xyz][i_sector][voxX][voxY][voxZ];
                                 }
                             }
                             for(Int_t i_sector = (0+i_AC*18); i_sector < (18+i_AC*18); i_sector++)
                             {
-                                if(weight_sum > 0.0) vec_DXYZ_sec_vox[i_xyz][i_sector][voxX][voxY][voxZ] = average_value/weight_sum;
+                                if(weight_sum > 0.0) vec_DXYZ_vox_sec[i_xyz][i_sector][voxX][voxY][voxZ] = average_value/weight_sum;
                             }
                         }
                     }
@@ -262,6 +304,10 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
             }
         }
     }
+
+
+
+    printf("flag_gaussfilter: %d, flag_sector_recovery: %d \n",flag_gaussfilter,flag_sector_recovery);
 
 
     if(flag_gaussfilter)
@@ -273,31 +319,40 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
             //Double_t arr_values[3][5][5]      = {0.0};
             //Double_t arr_values_used[3][5][5] = {0.0};
 
-            vector<vector<vector<vector<Double_t>>>> arr_values;
-            vector<vector<vector<vector<Double_t>>>> arr_values_used;
+            vector<vector<vector<vector<Float_t>>>> arr_values;
+            vector<vector<vector<vector<Float_t>>>> arr_values_sec;
+            vector<vector<vector<vector<Float_t>>>> arr_values_used;
             arr_values.resize(3);
+            arr_values_sec.resize(3);
             arr_values_used.resize(3);
+
 
             for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
             {
                 arr_values[i_xyz].resize(N_bins_X_GF*2+1);
+                arr_values_sec[i_xyz].resize(N_bins_X_GF*2+1);
                 arr_values_used[i_xyz].resize(N_bins_X_GF*2+1);
                 for(Int_t i_X = 0; i_X < (Int_t)arr_values[i_xyz].size(); i_X++)
                 {
                     arr_values[i_xyz][i_X].resize(N_bins_Y_GF*2+1);
+                    arr_values_sec[i_xyz][i_X].resize(N_bins_Y_GF*2+1);
                     arr_values_used[i_xyz][i_X].resize(N_bins_Y_GF*2+1);
                     for(Int_t i_Y = 0; i_Y < (Int_t)arr_values[i_xyz][i_X].size(); i_Y++)
                     {
                         arr_values[i_xyz][i_X][i_Y].resize(N_bins_Z_GF*2+1);
+                        arr_values_sec[i_xyz][i_X][i_Y].resize(N_bins_Z_GF*2+1);
                         arr_values_used[i_xyz][i_X][i_Y].resize(N_bins_Z_GF*2+1);
                         for(Int_t i_Z = 0; i_Z < (Int_t)arr_values[i_xyz][i_X][i_Y].size(); i_Z++)
                         {
                             arr_values[i_xyz][i_X][i_Y][i_Z]      = 0.0;
+                            arr_values_sec[i_xyz][i_X][i_Y][i_Z]  = 0.0;
                             arr_values_used[i_xyz][i_X][i_Y][i_Z] = 0.0;
                         }
                     }
                 }
             }
+
+
 
             for(Int_t voxX = 0; voxX < 152; voxX++)
             {
@@ -305,8 +360,9 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
                 {
                     for(Int_t voxZ = 0; voxZ < 5; voxZ++)
                     {
-                        Float_t sum_weight[3] = {0.0};
-                        Float_t sum_values[3] = {0.0};
+                        Float_t sum_weight[3]     = {0.0};
+                        Float_t sum_values[3]     = {0.0};
+                        Float_t sum_values_sec[3] = {0.0};
                         for(Int_t index_voxXB = -N_bins_X_GF; index_voxXB <= N_bins_X_GF; index_voxXB++)
                         {
                             Int_t voxXB = voxX + index_voxXB;
@@ -325,9 +381,11 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
                                     for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
                                     {
                                         arr_values_used[i_xyz][index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF] = 1.0;
-                                        arr_values[i_xyz][index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF]      = vec_GKernel[index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF]*vec_DXYZ_sec_vox[i_xyz][i_sector][voxXB][voxYB][voxZB];
-                                        sum_weight[i_xyz] += vec_GKernel[index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF];
-                                        sum_values[i_xyz] += arr_values[i_xyz][index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF];
+                                        arr_values_sec[i_xyz][index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF]  = vec_GKernel[index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF]*vec_DXYZ_vox_sec[i_xyz][i_sector][voxXB][voxYB][voxZB];
+                                        arr_values[i_xyz][index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF]      = vec_GKernel[index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF]*vec_DXYZ_vox[i_xyz][i_sector][voxXB][voxYB][voxZB];
+                                        sum_weight[i_xyz]     += vec_GKernel[index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF];
+                                        sum_values_sec[i_xyz] += arr_values_sec[i_xyz][index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF];
+                                        sum_values[i_xyz]     += arr_values[i_xyz][index_voxXB+N_bins_X_GF][index_voxYB+N_bins_Y_GF][index_voxZB+N_bins_Z_GF];
                                     }
                                 }
                             }
@@ -337,10 +395,240 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
                         {
                             if(sum_weight[i_xyz] > 0.0)
                             {
-                                sum_values[i_xyz] /= sum_weight[i_xyz];
-                                vec_DXYZ_sec_vox_GF[i_xyz][i_sector][voxX][voxY][voxZ] = sum_values[i_xyz];
+                                sum_values[i_xyz]     /= sum_weight[i_xyz];
+                                sum_values_sec[i_xyz] /= sum_weight[i_xyz];
+                                vec_DXYZ_vox_sec_GF[i_xyz][i_sector][voxX][voxY][voxZ] = sum_values_sec[i_xyz];
+                                vec_DXYZ_vox_GF[i_xyz][i_sector][voxX][voxY][voxZ]     = sum_values[i_xyz];
                             }
                         }
+                    }
+                }
+            }
+
+
+        }
+    }
+    //------------------------------------------------------------------
+
+
+
+
+    //------------------------------------------------------------------
+    // Loop over voxels which have no entry
+    if(flag_sector_recovery || flag_sectoraverage)
+    {
+        for(Int_t sector = 0; sector < 36; sector++)
+        {
+            for(Int_t bvox_X = 0; bvox_X < 152; bvox_X++)
+            {
+                stat[2] = RowX[bvox_X];
+                for(Int_t bvox_F = 0; bvox_F < 15; bvox_F++)
+                {
+                    for(Int_t bvox_Z = 0; bvox_Z < 5; bvox_Z++)
+                    {
+                        Int_t index_average_map  = bvox_X+152*bvox_F+152*15*bvox_Z+152*15*5*sector;
+
+                        Int_t i_z = 1;
+                        Int_t AC_side = 0;
+                        Float_t sign_z = 1.0;
+                        if(sector >= 18)
+                        {
+                            sign_z = -1.0;
+                            i_z    = 0;
+                            AC_side = 1;
+
+                        }
+                        if(index_average_map > 410400) printf("WARNING: index_average_map out of range! \n");
+
+                        for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+                        {
+                            if(vec_DXYZ_vox[i_xyz][sector][bvox_X][bvox_F][bvox_Z] == 0.0)
+                            {
+                                if(flag_gaussfilter)
+                                {
+                                    D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_vox_sec_GF[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+                                }
+                                else
+                                {
+                                    D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_vox_sec[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+                                }
+                            }
+                            //if(sector == 30) printf("sector: %d, flag_sector_recovery: %d index_average_map: %d, value: %4.3f \n",sector,flag_sector_recovery,index_average_map,D[i_xyz]);
+                        }
+
+
+
+                        //--------------------------------------------------
+                        //h2D_DXS_vs_radius ->Fill(sign_z*stat[2],DSX);
+                        for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+                        {
+                            h2D_DXYZS_vs_radius[i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
+                            TP_DXYZS_vs_radius[i_xyz]  ->Fill(sign_z*stat[2],D[i_xyz]);
+                            TP_DXYZS_vs_radius_Y_AC[bvox_F][AC_side][i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
+                            TP_DXYZS_vs_radius_Y_AC_sec[sector%18][bvox_F][AC_side][i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
+                            TP_DXYZS_vs_radius_Y_AC_sec_z[bvox_Z][sector%18][bvox_F][AC_side][i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
+                        }
+                        //--------------------------------------------------
+
+
+
+
+
+                        //--------------------------------------------------
+                        if(flag_low_radii_extrapolation)
+                        {
+                            //printf("flag_low_radii_extrapolation: %d \n",flag_low_radii_extrapolation);
+                            Int_t flag_do_extrapolation = 0;
+                            Float_t x_val_ext = sign_z*stat[2];
+                            if(!AC_side) // A side
+                            {
+                                if(x_val_ext < TGNum_fit_min_A->GetNumberEntry()->GetNumber())
+                                {
+                                    flag_do_extrapolation = 1;
+                                }
+                            }
+                            else // C side
+                            {
+                                if(x_val_ext > TGNum_fit_max_C->GetNumberEntry()->GetNumber())
+                                {
+                                    flag_do_extrapolation = 1;
+                                }
+                            }
+
+                            if(flag_do_extrapolation)
+                            {
+                                for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+                                {
+                                    //D[i_xyz] = func_PolyFitFunc_xyz_AC[i_xyz][AC_side] ->Eval(x_val_ext);
+                                    if(TGR_select_low_radius_extr[0] ->GetState() == kButtonDown)
+                                    {
+                                        D[i_xyz] = func_PolyFitFunc_xyz_Y_AC[bvox_F][AC_side][i_xyz] ->Eval(x_val_ext);
+                                    }
+                                    if(TGR_select_low_radius_extr[1] ->GetState() == kButtonDown)
+                                    {
+                                        D[i_xyz] = func_PolyFitFunc_xyz_Y_AC_sec[sector%18][bvox_F][AC_side][i_xyz] ->Eval(x_val_ext);
+                                    }
+                                    if(TGR_select_low_radius_extr[2] ->GetState() == kButtonDown)
+                                    {
+                                        D[i_xyz] = func_PolyFitFunc_xyz_Y_AC_sec_z[bvox_Z][sector%18][bvox_F][AC_side][i_xyz] ->Eval(x_val_ext);
+                                    }
+                                }
+                            }
+                        }
+                        //--------------------------------------------------
+
+
+
+
+                        //--------------------------------------------------
+                        //printf("index_average_map: %d, DXorig: %4.3f \n",index_average_map,DXorig);
+                        vec_VoxRes[file_selected][index_average_map].D[0]      = (float)D[0];
+                        vec_VoxRes[file_selected][index_average_map].D[1]      = (float)D[1];
+                        vec_VoxRes[file_selected][index_average_map].D[2]      = (float)D[2];
+
+                        vec_VoxRes[file_selected][index_average_map].DS[0]     = (float)D[0];
+                        vec_VoxRes[file_selected][index_average_map].DS[1]     = (float)D[1];
+                        vec_VoxRes[file_selected][index_average_map].DS[2]     = (float)D[2];
+
+                        vec_VoxRes[file_selected][index_average_map].DC[0]     = (float)D[0];
+                        vec_VoxRes[file_selected][index_average_map].DC[1]     = (float)D[1];
+                        vec_VoxRes[file_selected][index_average_map].DC[2]     = (float)D[2];
+
+                        vec_VoxRes[file_selected][index_average_map].E[0]      = (float)0.0;
+                        vec_VoxRes[file_selected][index_average_map].E[1]      = (float)0.0;
+                        vec_VoxRes[file_selected][index_average_map].E[2]      = (float)0.0;
+
+                        vec_VoxRes[file_selected][index_average_map].stat[0]   = (float)1000;
+                        vec_VoxRes[file_selected][index_average_map].stat[1]   = (float)1000;
+                        vec_VoxRes[file_selected][index_average_map].stat[2]   = (float)1000;
+                        vec_VoxRes[file_selected][index_average_map].stat[3]   = (float)1000; // number of entries used
+
+
+                        vec_VoxRes[file_selected][index_average_map].EXYCorr   = 1.0;
+                        vec_VoxRes[file_selected][index_average_map].dYSigMAD  = 1.0;
+                        vec_VoxRes[file_selected][index_average_map].dZSigLTM  = 1.0;
+
+                        vec_VoxRes[file_selected][index_average_map].bvox[0]   = bvox_Z;
+                        vec_VoxRes[file_selected][index_average_map].bvox[1]   = bvox_F;
+                        vec_VoxRes[file_selected][index_average_map].bvox[2]   = bvox_X;
+                        vec_VoxRes[file_selected][index_average_map].bsec      = sector;
+                        vec_VoxRes[file_selected][index_average_map].flags     = 7;
+                        //--------------------------------------------------
+
+
+                        Int_t bin_y_min, bin_y_max, bin_x_min, bin_x_max;
+
+                        //--------------------------------------------------
+                        // R vs. Z plots
+                        Float_t X_pad_position     = RowX[bvox_X];
+                        Float_t radius = X_pad_position;
+                        Float_t X_pad_position_min = RowX[bvox_X];
+                        Float_t X_pad_position_max = RowX[bvox_X+1];
+                        Float_t Z_pad_position_min = sign_z*(z_over_x_voxel_binning[bvox_Z]*X_pad_position);
+                        Float_t Z_pad_position_max = sign_z*(z_over_x_voxel_binning[bvox_Z+1]*X_pad_position);
+
+
+
+
+                        //--------------------------------------------------
+                        // Y vs. X plots
+
+                        //Int_t bvox_Z = (Int_t)bvox[0];  // Z/X index 0..4
+                        //Int_t bvox_F = (Int_t)bvox[1];  // Y/X index 0..14
+                        //Int_t bvox_X = (Int_t)bvox[2];  // X index   0..151
+
+
+                        Int_t bvox_z_offset = 5;
+                        if(sign_z < 0.0) bvox_z_offset = 4; // sign is negative: bvox_Z = 4 -> z_bin = 0, sign is positive: bvox_z = 0 -> z_bin = 5
+                        Int_t z_bin = bvox_z_offset + (Int_t)(sign_z*bvox_Z);
+
+                        // local TPC coordinate system
+                        X_pad_position_min = RowX[bvox_X];
+                        X_pad_position_max = RowX[bvox_X+1];
+
+                        // range: -0.17..0.17 in 15 bins
+                        Double_t y_over_x_value_min = (0.34/15.0)*bvox_F - 0.17;
+                        Double_t y_over_x_value_max = (0.34/15.0)*(bvox_F+1) - 0.17;
+                        Double_t Y_pad_position_min = y_over_x_value_min*X_pad_position_min;
+                        Double_t Y_pad_position_max = y_over_x_value_max*X_pad_position_min;
+
+                        bin_y_min = h2D_Y_vs_X_TPC_sector ->GetYaxis()->FindBin(X_pad_position_min);
+                        bin_y_max = h2D_Y_vs_X_TPC_sector ->GetYaxis()->FindBin(X_pad_position_max);
+                        bin_x_min = h2D_Y_vs_X_TPC_sector ->GetXaxis()->FindBin(Y_pad_position_min);
+                        bin_x_max = h2D_Y_vs_X_TPC_sector ->GetXaxis()->FindBin(Y_pad_position_max);
+
+                        TVector2 vec_2D_local, vec_2D_global;
+                        for(Int_t i_bin_x = bin_x_min; i_bin_x < bin_x_max; i_bin_x++)
+                        {
+                            Double_t x_val = h2D_Y_vs_X_TPC_sector->GetXaxis()->GetBinCenter(i_bin_x);
+                            for(Int_t i_bin_y = bin_y_min; i_bin_y < bin_y_max; i_bin_y++)
+                            {
+                                Double_t y_val = h2D_Y_vs_X_TPC_sector->GetYaxis()->GetBinCenter(i_bin_y);
+                                vec_2D_local.SetX(-x_val);
+                                vec_2D_local.SetY(y_val);
+                                Double_t phi_val = (-90.0 + (sector%18)*20.0 + 10.0)*TMath::DegToRad(); // rotation from local to global TPC coordinate system
+                                vec_2D_global = vec_2D_local.Rotate(phi_val);
+
+                                Int_t i_bin_x_rot = vec_h2D_DY_Y_vs_X[file_selected][z_bin][0]  ->GetXaxis()->FindBin(vec_2D_global.X());
+                                Int_t i_bin_y_rot = vec_h2D_DY_Y_vs_X[file_selected][z_bin][0]  ->GetYaxis()->FindBin(vec_2D_global.Y());
+
+                                for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+                                {
+                                    Double_t bin_cont = vec_h2D_DY_Y_vs_X[file_selected][z_bin][i_xyz]   ->GetBinContent(i_bin_x_rot,i_bin_y_rot);
+                                    //if(bin_cont > 0.0) printf("WARNING! Bin already filled! \n");
+                                    vec_h2D_DY_Y_vs_X[file_selected][z_bin][i_xyz]   ->SetBinContent(i_bin_x_rot,i_bin_y_rot,D[i_xyz]);
+                                    vec_h2D_DSY_Y_vs_X[file_selected][z_bin][i_xyz]  ->SetBinContent(i_bin_x_rot,i_bin_y_rot,DS[i_xyz]);
+                                }
+                                vec_h2D_stat_Y_vs_X[file_selected][z_bin][0] ->SetBinContent(i_bin_x_rot,i_bin_y_rot,stat[3]);
+                                vec_h2D_stat_Y_vs_X[file_selected][z_bin][1] ->SetBinContent(i_bin_x_rot,i_bin_y_rot,flags);
+                                vec_h2D_stat_Y_vs_X[file_selected][z_bin][2] ->SetBinContent(i_bin_x_rot,i_bin_y_rot,dYSigMAD);
+                            }
+                        }
+                        //--------------------------------------------------
+
+
+
+
                     }
                 }
             }
@@ -348,8 +636,11 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     }
     //------------------------------------------------------------------
 
-#if 1
 
+
+
+#if 1
+    //------------------------------------------------------------------------
     Float_t maxDX = 0.0;
     Float_t maxDY = 0.0;
     Float_t maxDZ = 0.0;
@@ -392,11 +683,27 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
         Float_t DYorig = D[1];
         Float_t DZorig = D[2];
 
-        if(flag_sectoraverage)
+        if(flag_sectoraverage && !flag_sector_recovery)
         {
             for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
             {
-                D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_sec_vox[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+                D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_vox_sec[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+            }
+        }
+
+        if(flag_sector_recovery)
+        {
+            for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+            {
+                if(CheckBox_sectors_used[sector] ->GetState() == kButtonDown)
+                {
+                    D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_vox[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+                }
+                else
+                {
+                    D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_vox_sec[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+                    //printf("recovery of sector: %d, xyz: %d, voxel: {%d, %d, %d}, value: %4.3f \n",sector,i_xyz,bvox_X,bvox_F,bvox_Z,D[i_xyz]);
+                }
             }
         }
 
@@ -404,13 +711,42 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
         {
             for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
             {
-                D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_sec_vox_GF[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+                D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_vox_GF[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+                if(flag_sectoraverage && !flag_sector_recovery) D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_vox_sec_GF[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+                if(flag_sector_recovery)
+                {
+                    if(CheckBox_sectors_used[sector] ->GetState() == kButtonDown)
+                    {
+                        D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_vox_GF[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+                    }
+                    else
+                    {
+                        D[i_xyz] = scale_XYZ[i_xyz]*sign_invert[i_xyz]*vec_DXYZ_vox_sec_GF[i_xyz][sector][bvox_X][bvox_F][bvox_Z] + offset_XYZ[i_xyz];
+                    }
+                }
             }
         }
 
+
+
+        //--------------------------------------------------
+        //h2D_DXS_vs_radius ->Fill(sign_z*stat[2],DSX);
+        for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
+        {
+            h2D_DXYZS_vs_radius[i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
+            TP_DXYZS_vs_radius[i_xyz]  ->Fill(sign_z*stat[2],D[i_xyz]);
+            TP_DXYZS_vs_radius_Y_AC[bvox_F][AC_side][i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
+            TP_DXYZS_vs_radius_Y_AC_sec[sector%18][bvox_F][AC_side][i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
+            TP_DXYZS_vs_radius_Y_AC_sec_z[bvox_Z][sector%18][bvox_F][AC_side][i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
+        }
+        //--------------------------------------------------
+
+
+
+        //--------------------------------------------------
         if(flag_low_radii_extrapolation)
         {
-            printf("flag_low_radii_extrapolation: %d \n",flag_low_radii_extrapolation);
+            //printf("flag_low_radii_extrapolation: %d \n",flag_low_radii_extrapolation);
             Int_t flag_do_extrapolation = 0;
             Float_t x_val_ext = sign_z*stat[2];
             if(!AC_side) // A side
@@ -433,10 +769,25 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
                 for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
                 {
                     //D[i_xyz] = func_PolyFitFunc_xyz_AC[i_xyz][AC_side] ->Eval(x_val_ext);
-                    D[i_xyz] = func_PolyFitFunc_xyz_Y_AC[bvox_F][AC_side][i_xyz] ->Eval(x_val_ext);
+                    if(TGR_select_low_radius_extr[0] ->GetState() == kButtonDown)
+                    {
+                        D[i_xyz] = func_PolyFitFunc_xyz_Y_AC[bvox_F][AC_side][i_xyz] ->Eval(x_val_ext);
+                    }
+                    if(TGR_select_low_radius_extr[1] ->GetState() == kButtonDown)
+                    {
+                        D[i_xyz] = func_PolyFitFunc_xyz_Y_AC_sec[sector%18][bvox_F][AC_side][i_xyz] ->Eval(x_val_ext);
+                    }
+                    if(TGR_select_low_radius_extr[2] ->GetState() == kButtonDown)
+                    {
+                        D[i_xyz] = func_PolyFitFunc_xyz_Y_AC_sec_z[bvox_Z][sector%18][bvox_F][AC_side][i_xyz] ->Eval(x_val_ext);
+                    }
                 }
             }
         }
+        //--------------------------------------------------
+
+
+
 
         Float_t DX = D[0];
         Float_t DY = D[1];
@@ -664,15 +1015,6 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
             h2D_DY_vs_stat ->Fill(stat[3],D[1]);
         }
 
-        //h2D_DXS_vs_radius ->Fill(sign_z*stat[2],DSX);
-        for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
-        {
-            h2D_DXYZS_vs_radius[i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
-            TP_DXYZS_vs_radius[i_xyz]  ->Fill(sign_z*stat[2],D[i_xyz]);
-            TP_DXYZS_vs_radius_Y_AC[bvox_F][AC_side][i_xyz] ->Fill(sign_z*stat[2],D[i_xyz]);
-        }
-
-
         h2D_DX_vs_radius  ->Fill(sign_z*stat[2],DX);
 
 
@@ -699,7 +1041,7 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
                 TP_DX_vs_sector[file_selected] ->Fill(bsec+((Double_t)bvox[1])/15.0,D[0]);
                 TP_DY_vs_sector[file_selected] ->Fill(bsec+((Double_t)bvox[1])/15.0,D[1]);
             }
-            if(bvox[2] >= 30 && bvox[2] <= 34)
+            if(bvox[2] >= 10 && bvox[2] <= 20)
             {
                 TP_DX_vs_sector[file_selected+2] ->Fill(bsec+((Double_t)bvox[1])/15.0,D[0]);
                 TP_DY_vs_sector[file_selected+2] ->Fill(bsec+((Double_t)bvox[1])/15.0,D[1]);
@@ -719,6 +1061,11 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
         // if (Cut(ientry) < 0) continue;
     }
     printf("max dist: {%4.3f, %4.3f, %4.3f} \n",maxDX,maxDY,maxDZ);
+    //------------------------------------------------------------------------
+
+
+
+
 
 
     //------------------------------------------------------------------------
@@ -827,7 +1174,7 @@ void voxResTree::Loop(Int_t N_events_loop, Int_t file_selected)
     func_modulation ->SetLineColor(kAzure-2);
     func_modulation ->SetLineWidth(4);
     func_modulation ->SetLineStyle(1);
-    func_modulation ->DrawCopy("same");
+    //func_modulation ->DrawCopy("same");
 
     can_h2D_DX_vs_sector ->Update();
     //------------------------------------------------------------------------

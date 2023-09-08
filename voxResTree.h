@@ -185,6 +185,8 @@ public :
    vector< vector<TH2D*> > vec_h2D_DZ_vs_Z;
    TProfile *TP_DZ_vs_Z, *TP_DZ_vs_Z_trunc, *TP_DXYZS_vs_radius[3];
    TProfile *TP_DXYZS_vs_radius_Y_AC[15][2][3];  // Y/Z, A-C, xyz
+   TProfile *TP_DXYZS_vs_radius_Y_AC_sec[18][15][2][3];  // sec,Y/Z, A-C, xyz
+   TProfile *TP_DXYZS_vs_radius_Y_AC_sec_z[5][18][15][2][3];  // z,sec,Y/Z, A-C, xyz
    vector< vector<TProfile*> >  vec_TP_DZ_vs_Z;
    TProfile *TP_DX_vs_R, *TP_DY_vs_R;
    vector< vector<TProfile*> > vec_TP_DZ_vs_DX_tanTheta;
@@ -228,12 +230,14 @@ public :
    vector<TGHorizontalFrame*> vec_TGH_lower_split;
    TRootEmbeddedCanvas *emb_can_h2D_DY_X_vs_Z, *emb_can_h2D_DY_Y_vs_X, *emb_can_statusbar;
    TCanvas *can_h2D_DY_X_vs_Z, *can_h2D_DY_Y_vs_X;
-   TGGroupFrame *GR_bottom_sliders_sector, *GR_bottom_sliders_phi, *GR_bottom_sliders_zbin, *GR_bottom_range, *GR_fit_range_A, *GR_fit_range_C, *GR_Exit, *GR_delta, *GR_bottom_GF, *GR_data_selection_A, *GR_data_selection_B, *GR_data_output, *GR_data_invert, *GR_ratio, *GR_Select;
+   TGGroupFrame *GR_bottom_sliders_sector, *GR_bottom_sliders_phi, *GR_bottom_sliders_zbin, *GR_bottom_range, *GR_fit_range_A, *GR_fit_range_C, *GR_Exit, *GR_delta, *GR_bottom_GF, *GR_data_selection_A, *GR_data_selection_B, *GR_data_output, *GR_data_invert, *GR_ratio, *GR_Select, *GR_low_radius_extr;
    TGHorizontalFrame *TGH_slider_sector, *TGH_slider_phi, *TGH_slider_zbin, *TGH_DeltaX_GF, *TGH_DeltaY_GF, *TGH_DeltaZ_GF, *TGH_sigma_GF, *TGH_sub_data_invert_master;
+   vector<TGHorizontalFrame*> vec_TGH_fit_ranges;
+   vector<TGLabel*> vec_TGL_fit_ranges;
    TGLabel *TGL_DeltaX_GF, *TGL_DeltaY_GF, *TGL_DeltaZ_GF, *TGL_sigma_GF;
-   TGVerticalFrame *TGV_range, *TGV_fit_range_A, *TGV_fit_range_C, *TGV_Exit, *TGV_delta, *TGV_Select, *TGV_GF, *TGV_ExSel_master, *TGV_DSel_master, *TGV_data_selection_A, *TGV_data_selection_B, *TGV_data_selection_master, *TGV_data_output, *TGV_data_invert, *TGV_ratio, *TGV_data_output_master, *TGV_data_invert_master;
+   TGVerticalFrame *TGV_range, *TGV_fit_range_A, *TGV_fit_range_C, *TGV_Exit, *TGV_delta, *TGV_Select, *TGV_low_radius_extr, *TGV_GF, *TGV_ExSel_master, *TGV_DSel_master, *TGV_data_selection_A, *TGV_data_selection_B, *TGV_data_selection_master, *TGV_data_output, *TGV_data_invert, *TGV_ratio, *TGV_data_output_master, *TGV_data_invert_master;
    TGHSlider *slider_sector, *slider_phi, *slider_zbin;
-   TGNumberEntry *TGNum_sector, *TGNum_phi, *TGNum_zbin, *TGNum_zmin, *TGNum_zmax, *TGNum_fit_poly_A, *TGNum_fit_min_A, *TGNum_fit_max_A, *TGNum_fit_poly_C, *TGNum_fit_min_C, *TGNum_fit_max_C, *TGNum_DeltaX_GF, *TGNum_DeltaY_GF, *TGNum_DeltaZ_GF, *TGNum_sigma_GF;
+   TGNumberEntry *TGNum_sector, *TGNum_phi, *TGNum_zbin, *TGNum_zmin, *TGNum_zmax, *TGNum_lre_sec_draw, *TGNum_fit_poly_A, *TGNum_fit_poly_AZ, *TGNum_fit_poly_CZ, *TGNum_fit_min_A, *TGNum_fit_max_A, *TGNum_fit_poly_C, *TGNum_fit_min_C, *TGNum_fit_max_C, *TGNum_DeltaX_GF, *TGNum_DeltaY_GF, *TGNum_DeltaZ_GF, *TGNum_sigma_GF;
    TGTextButton  *Button_exit;
    TGTextButton  *Button_export;
    TGTextButton  *Button_applyGF;
@@ -245,7 +249,7 @@ public :
    TGHorizontalFrame *TGH_select_DX, *TGH_select_DY, *TGH_select_DZ;
    TGNumberEntry *TGNum_scale_X[4], *TGNum_scale_Y[4], *TGNum_scale_Z[4];
    TGCheckButton *CheckBox_invert_X[2], *CheckBox_invert_Y[2], *CheckBox_invert_Z[2];
-   TGCheckButton *CheckBox_low_radii_extrapolation, *CheckBox_gaussfilter[2], *CheckBox_sectoraverage[2];
+   TGCheckButton *CheckBox_low_radii_extrapolation, *CheckBox_gaussfilter[2], *CheckBox_sectoraverage[4];
    TGButtonGroup *TGB_group_alignment_A, *TGB_group_alignment_B, *TGB_group_alignment_C;
    TGTextEntry* TGText_outputname;
    Int_t sector_plot = 0;
@@ -253,6 +257,7 @@ public :
    Int_t zbin_plot    = 0;
    vector<TGRadioButton*> vec_TRB_plot_data;
    vector<TGRadioButton*> select_button;
+   vector<TGRadioButton*> TGR_select_low_radius_extr;
 
    vector< vector<TGRadioButton*>> delta_button;
 
@@ -265,6 +270,8 @@ public :
    TF1* func_PolyFitFunc;
    TF1* func_PolyFitFunc_xyz_AC[3][2]; // xyz, A-C side
    TF1* func_PolyFitFunc_xyz_Y_AC[15][2][3];  // Y/Z, A-C, xyz
+   TF1* func_PolyFitFunc_xyz_Y_AC_sec[18][15][2][3];  // Y/Z, A-C, xyz
+   TF1* func_PolyFitFunc_xyz_Y_AC_sec_z[5][18][15][2][3];  // Z, Y/Z, A-C, xyz
 
    vector<TString> vec_TS_afile;
 
@@ -314,6 +321,7 @@ public :
    void     Update_DY_X_vs_Z();
    void     Update_DXY_vs_radius();
    void     Update_data_buttons(Int_t i_button_A, Int_t i_button_B);
+   void     Update_low_R_extr_buttons(Int_t i_button_A, Int_t i_button_B);
    void     Update_delta_buttons(Int_t button_A, Int_t button_xyz);
    void     Get_directory_list();
    void     DoExport();
@@ -513,7 +521,7 @@ void voxResTree::Init()
     {
         HistName = "h2D_DXYZS_vs_radius_";
         HistName += i_xyz;
-        h2D_DXYZS_vs_radius[i_xyz]       = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,400,-10,10);
+        h2D_DXYZS_vs_radius[i_xyz]       = new TH2D(HistName.Data(),HistName.Data(),500,-250,250,800,-20,20);
 
         HistName = "TP_DXYZS_vs_radius_";
         HistName += i_xyz;
@@ -541,14 +549,64 @@ void voxResTree::Init()
                 HistName += "_";
                 HistName += i_xyz;
                 func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] = new TF1(HistName.Data(),PolyFitFunc,-300,300,6);
+
+                for(Int_t i_sector = 0; i_sector < 18; i_sector++)
+                {
+                    HistName = "TP_DXYZS_vs_radius_Y_AC_sec_";
+                    HistName += i_yz;
+                    HistName += "_";
+                    HistName += i_AC;
+                    HistName += "_";
+                    HistName += i_xyz;
+                    HistName += "_";
+                    HistName += i_sector;
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] = new TProfile(HistName.Data(),HistName.Data(),500,-250,250);
+
+                    HistName = "func_PolyFitFunc_xyz_Y_AC_sec_";
+                    HistName += i_yz;
+                    HistName += "_";
+                    HistName += i_AC;
+                    HistName += "_";
+                    HistName += i_xyz;
+                    HistName += "_";
+                    HistName += i_sector;
+                    func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] = new TF1(HistName.Data(),PolyFitFunc,-300,300,6);
+
+                    for(Int_t i_z = 0; i_z < 5; i_z++)
+                    {
+                        HistName = "TP_DXYZS_vs_radius_Y_AC_sec_";
+                        HistName += i_yz;
+                        HistName += "_";
+                        HistName += i_AC;
+                        HistName += "_";
+                        HistName += i_xyz;
+                        HistName += "_";
+                        HistName += i_sector;
+                        HistName += "_";
+                        HistName += i_z;
+                        TP_DXYZS_vs_radius_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] = new TProfile(HistName.Data(),HistName.Data(),500,-250,250);
+
+                        HistName = "func_PolyFitFunc_xyz_Y_AC_sec_";
+                        HistName += i_yz;
+                        HistName += "_";
+                        HistName += i_AC;
+                        HistName += "_";
+                        HistName += i_xyz;
+                        HistName += "_";
+                        HistName += i_sector;
+                        HistName += "_";
+                        HistName += i_z;
+                        func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] = new TF1(HistName.Data(),PolyFitFunc,-300,300,6);
+                    }
+                }
             }
         }
     }
 
 
-    h2D_DX_vs_radius        = new TH2D("h2D_DX_vs_radius","h2D_DX_vs_radius",500,-250,250,400,-10,10);
+    h2D_DX_vs_radius        = new TH2D("h2D_DX_vs_radius","h2D_DX_vs_radius",500,-250,250,800,-20,20);
     h2D_DY_vs_stat          = new TH2D("h2D_DY_vs_stat","h2D_DY_vs_stat",400,0,5000,400,-10,10);
-    h2D_DX_vs_sector        = new TH2D("h2D_DX_vs_sector","h2D_DX_vs_sector",540,0,36,400,-10,10);
+    h2D_DX_vs_sector        = new TH2D("h2D_DX_vs_sector","h2D_DX_vs_sector",540,0,36,800,-20,20);
     TP_DX_vs_sector[0]      = new TProfile("TP_DX_vs_sectorA","TP_DX_vs_sectorA",540,0,36);
     TP_DX_vs_sector[1]      = new TProfile("TP_DX_vs_sectorB","TP_DX_vs_sectorB",540,0,36);
     TP_DX_vs_sector[2]      = new TProfile("TP_DX_vs_sectorC","TP_DX_vs_sectorC",540,0,36);
@@ -1100,43 +1158,100 @@ void voxResTree::Init()
     // // check box get ratio
     CheckBox_getRatio  = new TGCheckButton(TGV_ratio, new TGHotString("ratio A/B"), -1);
     CheckBox_getDiff   = new TGCheckButton(TGV_ratio, new TGHotString("diff A-B"), -1);
+    TGNum_lre_sec_draw = new TGNumberEntry(TGV_ratio, 0, 2,(TGNumberFormat::EStyle) 0);
     // CheckBox_getRatio ->SetState(kButtonUp);
     //CheckBox_scanData ->Connect("Clicked()", "voxResTree", this, "DoNewDataSelection()");
     CheckBox_getRatio ->Connect("Clicked()", "voxResTree", this,Form("GetRatio(Int_t=%d)",0));
     CheckBox_getDiff  ->Connect("Clicked()", "voxResTree", this,Form("GetRatio(Int_t=%d)",1));
+    TGV_ratio    ->AddFrame(CheckBox_getDiff, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
     TGV_ratio    ->AddFrame(CheckBox_getRatio, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
-    TGV_ratio    ->AddFrame(CheckBox_getRatio, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    TGV_ratio    ->AddFrame(TGNum_lre_sec_draw, new TGLayoutHints(kLHintsCenterX,5,5,3,4));
 
 
 
 
     //--------------------------------------------------------------------------------------------------
-    GR_fit_range_A  = new TGGroupFrame(TGH_sub_data_invert_master,"fit range A",kVerticalFrame);
+    GR_fit_range_A     = new TGGroupFrame(TGH_sub_data_invert_master,"fit range A",kVerticalFrame);
     TGV_fit_range_A    = new TGVerticalFrame(GR_fit_range_A);
     GR_fit_range_A     ->AddFrame(TGV_fit_range_A, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-    TGNum_fit_poly_A      = new TGNumberEntry(TGV_fit_range_A, 3, 6,(TGNumberFormat::EStyle) 0);
-    TGNum_fit_min_A       = new TGNumberEntry(TGV_fit_range_A, 103.0, 6,(TGNumberFormat::EStyle) 1);
-    TGNum_fit_max_A       = new TGNumberEntry(TGV_fit_range_A, 180.0, 6,(TGNumberFormat::EStyle) 1);
-    TGNum_fit_poly_A      ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
-    TGNum_fit_min_A       ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
-    TGNum_fit_max_A       ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
-    TGV_fit_range_A        ->AddFrame(TGNum_fit_poly_A,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
-    TGV_fit_range_A        ->AddFrame(TGNum_fit_min_A,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
-    TGV_fit_range_A        ->AddFrame(TGNum_fit_max_A,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
 
-
-    GR_fit_range_C  = new TGGroupFrame(TGH_sub_data_invert_master,"fit range C",kVerticalFrame);
+    GR_fit_range_C     = new TGGroupFrame(TGH_sub_data_invert_master,"fit range C",kVerticalFrame);
     TGV_fit_range_C    = new TGVerticalFrame(GR_fit_range_C);
     GR_fit_range_C     ->AddFrame(TGV_fit_range_C, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-    TGNum_fit_poly_C      = new TGNumberEntry(TGV_fit_range_C, 3, 6,(TGNumberFormat::EStyle) 0);
-    TGNum_fit_min_C       = new TGNumberEntry(TGV_fit_range_C, -130.0, 6,(TGNumberFormat::EStyle) 1);
-    TGNum_fit_max_C       = new TGNumberEntry(TGV_fit_range_C, -105.0, 6,(TGNumberFormat::EStyle) 1);
+
+    vec_TGH_fit_ranges.resize(8);
+    vec_TGL_fit_ranges.resize(8);
+    TString vec_TS_label_fit_ranges[8] = {"X,Y","Z","low","high","X,Y","Z","low","high"};
+
+    for(Int_t i_fit = 0; i_fit < 8; i_fit++)
+    {
+        if(i_fit < 4)
+        {
+            vec_TGH_fit_ranges[i_fit] = new TGHorizontalFrame(TGV_fit_range_A);
+            vec_TGL_fit_ranges[i_fit] = new TGLabel(vec_TGH_fit_ranges[i_fit],vec_TS_label_fit_ranges[i_fit].Data());
+        }
+        else
+        {
+            vec_TGH_fit_ranges[i_fit] = new TGHorizontalFrame(TGV_fit_range_C);
+            vec_TGL_fit_ranges[i_fit] = new TGLabel(vec_TGH_fit_ranges[i_fit],vec_TS_label_fit_ranges[i_fit].Data());
+        }
+    }
+
+
+    TGNum_fit_poly_A      = new TGNumberEntry(vec_TGH_fit_ranges[0], 2, 4,(TGNumberFormat::EStyle) 0);
+    vec_TGH_fit_ranges[0] ->AddFrame(TGNum_fit_poly_A,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    vec_TGH_fit_ranges[0] ->AddFrame(vec_TGL_fit_ranges[0],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+
+    TGNum_fit_poly_AZ     = new TGNumberEntry(vec_TGH_fit_ranges[1], 1, 4,(TGNumberFormat::EStyle) 0);
+    vec_TGH_fit_ranges[1] ->AddFrame(TGNum_fit_poly_A,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    vec_TGH_fit_ranges[1] ->AddFrame(vec_TGL_fit_ranges[1],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+
+    TGNum_fit_min_A       = new TGNumberEntry(vec_TGH_fit_ranges[2], 95.0, 4,(TGNumberFormat::EStyle) 1);
+    vec_TGH_fit_ranges[2] ->AddFrame(TGNum_fit_min_A,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    vec_TGH_fit_ranges[2] ->AddFrame(vec_TGL_fit_ranges[2],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+
+    TGNum_fit_max_A      = new TGNumberEntry(vec_TGH_fit_ranges[3], 130.0, 4,(TGNumberFormat::EStyle) 1);
+    vec_TGH_fit_ranges[3] ->AddFrame(TGNum_fit_max_A,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    vec_TGH_fit_ranges[3] ->AddFrame(vec_TGL_fit_ranges[3],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+
+
+    TGNum_fit_poly_C      = new TGNumberEntry(vec_TGH_fit_ranges[4], 2, 4,(TGNumberFormat::EStyle) 0);
+    vec_TGH_fit_ranges[4] ->AddFrame(TGNum_fit_poly_C,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    vec_TGH_fit_ranges[4] ->AddFrame(vec_TGL_fit_ranges[4],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+
+    TGNum_fit_poly_CZ     = new TGNumberEntry(vec_TGH_fit_ranges[5], 1, 4,(TGNumberFormat::EStyle) 0);
+    vec_TGH_fit_ranges[5] ->AddFrame(TGNum_fit_poly_C,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    vec_TGH_fit_ranges[5] ->AddFrame(vec_TGL_fit_ranges[5],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+
+    TGNum_fit_min_C       = new TGNumberEntry(vec_TGH_fit_ranges[6], -130.0, 4,(TGNumberFormat::EStyle) 1);
+    vec_TGH_fit_ranges[6] ->AddFrame(TGNum_fit_min_C,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    vec_TGH_fit_ranges[6] ->AddFrame(vec_TGL_fit_ranges[6],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+
+    TGNum_fit_max_C      = new TGNumberEntry(vec_TGH_fit_ranges[7], -95.0, 4,(TGNumberFormat::EStyle) 1);
+    vec_TGH_fit_ranges[7] ->AddFrame(TGNum_fit_max_C,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    vec_TGH_fit_ranges[7] ->AddFrame(vec_TGL_fit_ranges[7],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+
+
+    TGNum_fit_poly_A      ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
+    TGNum_fit_poly_AZ     ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
+    TGNum_fit_min_A       ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
+    TGNum_fit_max_A       ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
+
+    TGV_fit_range_A        ->AddFrame(vec_TGH_fit_ranges[0],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_fit_range_A        ->AddFrame(vec_TGH_fit_ranges[1],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_fit_range_A        ->AddFrame(vec_TGH_fit_ranges[2],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_fit_range_A        ->AddFrame(vec_TGH_fit_ranges[3],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+
+
     TGNum_fit_poly_C      ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
+    TGNum_fit_poly_CZ     ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
     TGNum_fit_min_C       ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
     TGNum_fit_max_C       ->Connect("ValueSet(Long_t)", "voxResTree",this, "Update_DXY_vs_radius()");
-    TGV_fit_range_C        ->AddFrame(TGNum_fit_poly_C,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
-    TGV_fit_range_C        ->AddFrame(TGNum_fit_min_C,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
-    TGV_fit_range_C        ->AddFrame(TGNum_fit_max_C,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+
+    TGV_fit_range_C        ->AddFrame(vec_TGH_fit_ranges[4],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_fit_range_C        ->AddFrame(vec_TGH_fit_ranges[5],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_fit_range_C        ->AddFrame(vec_TGH_fit_ranges[6],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_fit_range_C        ->AddFrame(vec_TGH_fit_ranges[7],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
     //--------------------------------------------------------------------------------------------------
 
 
@@ -1303,6 +1418,25 @@ void voxResTree::Init()
     select_button[0] ->Connect("Pressed()", "voxResTree", this, Form("Update_data_buttons(Int_t=%d, %d)", 0,1));
     select_button[1] ->Connect("Pressed()", "voxResTree", this, Form("Update_data_buttons(Int_t=%d, %d)", 1,1));
 
+
+    // Low radius extrapolation Buttons
+    GR_low_radius_extr  = new TGGroupFrame(TGV_ExSel_master,"Low R extr.",kVerticalFrame);
+    TGV_low_radius_extr = new TGVerticalFrame(GR_low_radius_extr);
+    GR_low_radius_extr  ->AddFrame(TGV_low_radius_extr, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+
+    TGR_select_low_radius_extr.resize(3);
+    TGR_select_low_radius_extr[0] = new TGRadioButton(TGV_low_radius_extr, "<sec>", kTextRight);
+    TGR_select_low_radius_extr[1] = new TGRadioButton(TGV_low_radius_extr, "s-by-s", kTextRight);
+    TGR_select_low_radius_extr[2] = new TGRadioButton(TGV_low_radius_extr, "s-by-s,z", kTextRight);
+    TGV_low_radius_extr->AddFrame(TGR_select_low_radius_extr[0], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    TGV_low_radius_extr->AddFrame(TGR_select_low_radius_extr[1], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+    TGV_low_radius_extr->AddFrame(TGR_select_low_radius_extr[2], new TGLayoutHints(kLHintsCenterX,5,5,3,4));
+
+
+    TGR_select_low_radius_extr[0] ->Connect("Pressed()", "voxResTree", this, Form("Update_low_R_extr_buttons(Int_t=%d, %d)", 0,1));
+    TGR_select_low_radius_extr[1] ->Connect("Pressed()", "voxResTree", this, Form("Update_low_R_extr_buttons(Int_t=%d, %d)", 1,1));
+    TGR_select_low_radius_extr[2] ->Connect("Pressed()", "voxResTree", this, Form("Update_low_R_extr_buttons(Int_t=%d, %d)", 2,1));
+
     // check box scan data
     //CheckBox_scanData  = new TGCheckButton(TGH_lowerA, new TGHotString("Scan data"), -1);
     //CheckBox_scanData ->SetState(kButtonUp);
@@ -1335,6 +1469,11 @@ void voxResTree::Init()
     CheckBox_sectoraverage[1]  = new TGCheckButton(TGV_GF, new TGHotString("SAB"), -1);
     CheckBox_sectoraverage[0] ->SetState(kButtonUp);
     CheckBox_sectoraverage[1] ->SetState(kButtonUp);
+
+    CheckBox_sectoraverage[2]  = new TGCheckButton(TGV_GF, new TGHotString("SARA"), -1); // sector average recovery of single sectors (replace them by sector average over the rest)
+    CheckBox_sectoraverage[3]  = new TGCheckButton(TGV_GF, new TGHotString("SARB"), -1);
+    CheckBox_sectoraverage[2] ->SetState(kButtonUp);
+    CheckBox_sectoraverage[3] ->SetState(kButtonUp);
 
     // Apply Gaussian filter button
     Button_applyGF = new TGTextButton(TGV_GF, "&Apply filter");
@@ -1381,6 +1520,8 @@ void voxResTree::Init()
     TGV_GF        ->AddFrame(CheckBox_gaussfilter[1],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
     TGV_GF        ->AddFrame(CheckBox_sectoraverage[0],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
     TGV_GF        ->AddFrame(CheckBox_sectoraverage[1],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_GF        ->AddFrame(CheckBox_sectoraverage[2],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
+    TGV_GF        ->AddFrame(CheckBox_sectoraverage[3],new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
     TGV_GF        ->AddFrame(TGH_DeltaX_GF,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
     TGV_GF        ->AddFrame(TGH_DeltaY_GF,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
     TGV_GF        ->AddFrame(TGH_DeltaZ_GF,new TGLayoutHints(kLHintsLeft, 1, 1, 1, 1));
@@ -1392,6 +1533,8 @@ void voxResTree::Init()
 
     TGV_ExSel_master->AddFrame(GR_Exit, new TGLayoutHints(kLHintsLeft,5,5,3,4));
     TGV_ExSel_master->AddFrame(GR_Select, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+    TGV_ExSel_master->AddFrame(GR_low_radius_extr, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+
 
     //TGV_DSel_master->AddFrame(GR_delta, new TGLayoutHints(kLHintsLeft,5,5,3,4));
 
@@ -1495,6 +1638,8 @@ void voxResTree::Init()
     Update_data_buttons(0,1); // init
     Update_delta_buttons(0,0);
 
+    Update_low_R_extr_buttons(0,1);
+
 
     outputfile = new TFile("dZ_over_z_fit_params.root","RECREATE");
     //output_tree = new TTree("output_tree","fit params");
@@ -1592,7 +1737,14 @@ void voxResTree::Change_number_entry()
 //---------------------------------------------------------------------------------
 void voxResTree::Apply_filter()
 {
-    Loop(-1,global_position);
+    if(CheckBox_low_radii_extrapolation ->GetState() == kButtonDown)
+    {
+        Update_DXY_vs_radius();
+    }
+    else
+    {
+        Loop(-1,global_position);
+    }
 }
 //---------------------------------------------------------------------------------
 
@@ -1649,13 +1801,19 @@ void voxResTree::Update_DXY_vs_radius()
         {
             func_PolyFitFunc_xyz_AC[i_xyz][0] ->SetParameter(i,0.0);
             func_PolyFitFunc_xyz_AC[i_xyz][0] ->SetParError(i,0.0);
+            func_PolyFitFunc_xyz_AC[i_xyz][0] ->ReleaseParameter(i);
         }
         func_PolyFitFunc_xyz_AC[i_xyz][0] ->SetParameter(0,21.0);
         func_PolyFitFunc_xyz_AC[i_xyz][0] ->SetParameter(1,0.25);
         func_PolyFitFunc_xyz_AC[i_xyz][0] ->SetParameter(2,0.00073);
 
-        Int_t N_fit_poly_A = TGNum_fit_poly_A ->GetNumberEntry()->GetNumber();
-        if(N_fit_poly_A > 0 && N_fit_poly_A < 6)
+        Int_t N_fit_poly_A = 3;
+
+        if(i_xyz < 2)  N_fit_poly_A  = TGNum_fit_poly_A ->GetNumberEntry()->GetNumber();
+        if(i_xyz == 2) N_fit_poly_A = TGNum_fit_poly_AZ ->GetNumberEntry()->GetNumber();
+
+
+        if(N_fit_poly_A >= 0 && N_fit_poly_A < 6)
         {
             for(Int_t i = N_fit_poly_A+1; i < 6; i++)
             {
@@ -1686,13 +1844,16 @@ void voxResTree::Update_DXY_vs_radius()
         {
             func_PolyFitFunc_xyz_AC[i_xyz][1] ->SetParameter(i,0.0);
             func_PolyFitFunc_xyz_AC[i_xyz][1] ->SetParError(i,0.0);
+            func_PolyFitFunc_xyz_AC[i_xyz][1] ->ReleaseParameter(i);
         }
         func_PolyFitFunc_xyz_AC[i_xyz][1] ->SetParameter(0,21.0);
         func_PolyFitFunc_xyz_AC[i_xyz][1] ->SetParameter(1,0.25);
         func_PolyFitFunc_xyz_AC[i_xyz][1] ->SetParameter(2,0.00073);
 
-        Int_t N_fit_poly_C = TGNum_fit_poly_C ->GetNumberEntry()->GetNumber();
-        if(N_fit_poly_A > 0 && N_fit_poly_C < 6)
+        Int_t N_fit_poly_C = 3;
+        if(i_xyz < 2)  N_fit_poly_C  = TGNum_fit_poly_C ->GetNumberEntry()->GetNumber();
+        if(i_xyz == 2) N_fit_poly_C = TGNum_fit_poly_CZ ->GetNumberEntry()->GetNumber();
+        if(N_fit_poly_C >= 0 && N_fit_poly_C < 6)
         {
             for(Int_t i = N_fit_poly_C+1; i < 6; i++)
             {
@@ -1740,9 +1901,13 @@ void voxResTree::Update_DXY_vs_radius()
             for(Int_t i_AC = 0; i_AC < 2; i_AC++)
             {
                 Int_t N_fit_poly_A = 3;
-                if(i_AC == 0) N_fit_poly_A = TGNum_fit_poly_A ->GetNumberEntry()->GetNumber();
-                if(i_AC == 1) N_fit_poly_A = TGNum_fit_poly_C ->GetNumberEntry()->GetNumber();
+                if(i_AC == 0 && i_xyz < 2)  N_fit_poly_A = TGNum_fit_poly_A ->GetNumberEntry()->GetNumber();
+                if(i_AC == 1 && i_xyz < 2)  N_fit_poly_A = TGNum_fit_poly_C ->GetNumberEntry()->GetNumber();
 
+                if(i_AC == 0 && i_xyz == 2) N_fit_poly_A = TGNum_fit_poly_AZ ->GetNumberEntry()->GetNumber();
+                if(i_AC == 1 && i_xyz == 2) N_fit_poly_A = TGNum_fit_poly_CZ ->GetNumberEntry()->GetNumber();
+
+                //printf("i_xyz: %d, i_AC: %d, i_yz: %d, N_fit_poly: %d \n",i_xyz,i_AC,i_yz,N_fit_poly_A);
 
                 Float_t radius_fit_start_A = 0.0;
                 Float_t radius_fit_stop_A  = 0.0;
@@ -1757,6 +1922,7 @@ void voxResTree::Update_DXY_vs_radius()
                     radius_fit_stop_A  = TGNum_fit_max_C->GetNumberEntry()->GetNumber();
                 }
 
+                /*
                 TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->GetXaxis()->CenterTitle();
                 TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->GetYaxis()->CenterTitle();
                 TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->SetStats(0);
@@ -1772,6 +1938,7 @@ void voxResTree::Update_DXY_vs_radius()
                 TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->GetXaxis()->SetTitle("radius (cm)");
                 TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->GetYaxis()->SetTitle(vec_TS_label_XYZ[i_xyz].Data());
                 TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->GetZaxis()->SetTitle("entries");
+                TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->GetXaxis()->SetRangeUser(-160.0,160.0);
                 if(i_xyz == 0) TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->GetYaxis()->SetRangeUser(-10.0,3.0);
                 if(i_xyz == 1) TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->GetYaxis()->SetRangeUser(-3.0,10.0);
                 if(i_xyz == 2) TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->GetYaxis()->SetRangeUser(-3.0,8.0);
@@ -1782,18 +1949,19 @@ void voxResTree::Update_DXY_vs_radius()
                 TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->SetLineStyle(1);
                 if(i_AC == 0) TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->DrawCopy("hist");
                 else TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->DrawCopy("same hist");
-
+                */
                 //--------------------------------------------------
                 for(Int_t i = 0; i < 6; i++)
                 {
                     func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->SetParameter(i,0.0);
                     func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->SetParError(i,0.0);
+                    func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->ReleaseParameter(i);
                 }
                 func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->SetParameter(0,21.0);
                 func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->SetParameter(1,0.25);
                 func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->SetParameter(2,0.00073);
 
-                if(N_fit_poly_A > 0 && N_fit_poly_A < 6)
+                if(N_fit_poly_A >= 0 && N_fit_poly_A < 6)
                 {
                     for(Int_t i = N_fit_poly_A+1; i < 6; i++)
                     {
@@ -1803,12 +1971,113 @@ void voxResTree::Update_DXY_vs_radius()
 
                 TP_DXYZS_vs_radius_Y_AC[i_yz][i_AC][i_xyz] ->Fit(func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz]->GetName(),"QWMN","",radius_fit_start_A,radius_fit_stop_A);
 
+                // Do the fits for each sector and Y
+                for(Int_t i_sector = 0; i_sector < 18; i_sector++)
+                {
+                    Int_t sector_plot = TGNum_lre_sec_draw ->GetNumberEntry()->GetNumber();
+                    if(!(sector_plot >= 0 && sector_plot < 18)) sector_plot = 0;
+
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetXaxis()->CenterTitle();
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetYaxis()->CenterTitle();
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetStats(0);
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetTitle("");
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetXaxis()->SetTitleOffset(0.1);
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetYaxis()->SetTitleOffset(0.1);
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetXaxis()->SetLabelSize(0.1);
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetYaxis()->SetLabelSize(0.1);
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetXaxis()->SetTitleSize(0.2);
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetYaxis()->SetTitleSize(0.2);
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetXaxis()->SetNdivisions(505,'N');
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetYaxis()->SetNdivisions(505,'N');
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetXaxis()->SetTitle("radius (cm)");
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetYaxis()->SetTitle(vec_TS_label_XYZ[i_xyz].Data());
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetZaxis()->SetTitle("entries");
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetXaxis()->SetRangeUser(-160.0,160.0);
+                    if(i_xyz == 0) TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetYaxis()->SetRangeUser(-10.0,3.0);
+                    if(i_xyz == 1) TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetYaxis()->SetRangeUser(-3.0,10.0);
+                    if(i_xyz == 2) TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->GetYaxis()->SetRangeUser(-3.0,8.0);
+
+
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetLineColor(kBlack);
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetLineWidth(3);
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetLineStyle(1);
+                    if(i_sector == sector_plot)
+                    {
+                        if(i_AC == 0) TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->DrawCopy("hist");
+                        else TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->DrawCopy("same hist");
+                    }
+
+
+                    for(Int_t i = 0; i < 6; i++)
+                    {
+                        func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetParameter(i,0.0);
+                        func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetParError(i,0.0);
+                        func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->ReleaseParameter(i);
+                    }
+                    func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetParameter(0,21.0);
+                    func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetParameter(1,0.25);
+                    func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetParameter(2,0.00073);
+
+                    if(N_fit_poly_A >= 0 && N_fit_poly_A < 6)
+                    {
+                        for(Int_t i = N_fit_poly_A+1; i < 6; i++)
+                        {
+                            func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->FixParameter(i,0.0);
+                        }
+                    }
+
+                    TP_DXYZS_vs_radius_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->Fit(func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz]->GetName(),"QWMN","",radius_fit_start_A,radius_fit_stop_A);
+
+                    if(i_AC == 0) func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetRange(85.0,radius_fit_stop_A);
+                    if(i_AC == 1) func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetRange(radius_fit_start_A,-85.0);
+
+                    // Do the fits for each z bin
+                    for(Int_t i_z = 0; i_z < 5; i_z++)
+                    {
+                        for(Int_t i = 0; i < 6; i++)
+                        {
+                            func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->SetParameter(i,0.0);
+                            func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->SetParError(i,0.0);
+                            func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->ReleaseParameter(i);
+                        }
+                        func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->SetParameter(0,21.0);
+                        func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->SetParameter(1,0.25);
+                        func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->SetParameter(2,0.00073);
+
+                        if(N_fit_poly_A >= 0 && N_fit_poly_A < 6)
+                        {
+                            for(Int_t i = N_fit_poly_A+1; i < 6; i++)
+                            {
+                                func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->FixParameter(i,0.0);
+                            }
+                        }
+
+                        TP_DXYZS_vs_radius_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->Fit(func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz]->GetName(),"QWMN","",radius_fit_start_A,radius_fit_stop_A);
+
+                        func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->SetLineColor(kMagenta+1);
+                        func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->SetLineStyle(2);
+                        func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->SetLineWidth(3);
+                        if(i_AC == 0) func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->SetRange(85.0,radius_fit_stop_A);
+                        if(i_AC == 1) func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->SetRange(radius_fit_start_A,-85.0);
+                        if(i_sector == sector_plot) func_PolyFitFunc_xyz_Y_AC_sec_z[i_z][i_sector][i_yz][i_AC][i_xyz] ->DrawCopy("same");
+                    }
+
+                    func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetLineColor(kRed+1);
+                    func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetLineStyle(1);
+                    func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->SetLineWidth(4);
+                    if(i_sector == sector_plot) func_PolyFitFunc_xyz_Y_AC_sec[i_sector][i_yz][i_AC][i_xyz] ->DrawCopy("same");
+
+
+                }
+
+
                 func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->SetLineColor(kCyan+1);
                 func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->SetLineStyle(1);
                 func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->SetLineWidth(4);
                 if(i_AC == 0) func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->SetRange(85.0,radius_fit_stop_A);
                 if(i_AC == 1) func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->SetRange(radius_fit_start_A,-85.0);
-                func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->DrawCopy("same");
+                //func_PolyFitFunc_xyz_Y_AC[i_yz][i_AC][i_xyz] ->DrawCopy("same");
+                //printf("Draw \n");
                 //--------------------------------------------------
 
 
@@ -1819,6 +2088,7 @@ void voxResTree::Update_DXY_vs_radius()
         }
     }
     can_h2D_DXS_vs_radius_Y_AC ->Update();
+    Loop(-1,global_position);
     //------------------------------------------------------------------------
 }
 //---------------------------------------------------------------------------------
@@ -1906,6 +2176,10 @@ void voxResTree::Update_DY_X_vs_Z()
         can_h2D_DY_X_vs_Z ->cd();  //Here the histogram gets drawn in the left canvas
         if(data_type == 0)
         {
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetLabelSize(0.05);
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetLabelSize(0.05);
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetTitleSize(0.05);
+            vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitleSize(0.05);
             vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetStats(0);
             vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetTitle("");
             vec_h2D_DY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
@@ -1929,6 +2203,10 @@ void voxResTree::Update_DY_X_vs_Z()
         }
         if(data_type == 1)
         {
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetLabelSize(0.05);
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetLabelSize(0.05);
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetTitleSize(0.05);
+            vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitleSize(0.05);
             vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetStats(0);
             vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetTitle("");
             vec_h2D_DSY_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
@@ -1952,6 +2230,10 @@ void voxResTree::Update_DY_X_vs_Z()
         }
         if(data_type == 2)
         {
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetLabelSize(0.05);
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetLabelSize(0.05);
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetTitleSize(0.05);
+            vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetYaxis()->SetTitleSize(0.05);
             vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetStats(0);
             vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->SetTitle("");
             vec_h2D_stat_X_vs_Z[selected_file][sector_plot][phi_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
@@ -1999,6 +2281,10 @@ void voxResTree::Update_DY_X_vs_Z()
         can_h2D_DY_Y_vs_X ->cd();
         if(data_type == 0)
         {
+            vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetLabelSize(0.05);
+            vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetLabelSize(0.05);
+            vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetTitleSize(0.05);
+            vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetTitleSize(0.05);
             vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetStats(0);
             vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetTitle("");
             vec_h2D_DY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
@@ -2030,6 +2316,10 @@ void voxResTree::Update_DY_X_vs_Z()
         }
         if(data_type == 1)
         {
+            vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetLabelSize(0.05);
+            vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetLabelSize(0.05);
+            vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetTitleSize(0.05);
+            vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetTitleSize(0.05);
             vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetStats(0);
             vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetTitle("");
             vec_h2D_DSY_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
@@ -2053,6 +2343,10 @@ void voxResTree::Update_DY_X_vs_Z()
         }
         if(data_type == 2)
         {
+            vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetLabelSize(0.05);
+            vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetLabelSize(0.05);
+            vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetTitleSize(0.05);
+            vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetYaxis()->SetTitleSize(0.05);
             vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetStats(0);
             vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->SetTitle("");
             vec_h2D_stat_Y_vs_X[selected_file][zbin_plot][xyz_bin] ->GetXaxis()->SetNdivisions(505,'N');
@@ -2351,6 +2645,21 @@ void voxResTree::Update_DY_X_vs_Z()
         }
     }
     //--------------------------------------
+}
+//---------------------------------------------------------------------------------
+
+
+
+//---------------------------------------------------------------------------------
+void voxResTree::Update_low_R_extr_buttons(Int_t i_button_A, Int_t i_button_B)
+{
+    for(Int_t i_button = 0; i_button < (Int_t)TGR_select_low_radius_extr.size(); i_button++)
+    {
+        TGR_select_low_radius_extr[i_button] ->SetState(kButtonUp);
+    }
+    TGR_select_low_radius_extr[i_button_A] ->SetState(kButtonDown);
+
+    Apply_filter();
 }
 //---------------------------------------------------------------------------------
 
